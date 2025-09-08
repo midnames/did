@@ -1,0 +1,157 @@
+pragma language_version 0.16;
+
+import CompactStandardLibrary;
+
+export ledger id: Opaque<"string">;
+export sealed ledger controllerPublicKey: Bytes<32>;
+export ledger active: Boolean;
+export ledger keyRing: Map<Opaque<"string">, PublicKey>;
+
+export enum VerificationMethodType {
+    Ed25519VerificationKey2020,
+    JubJubVerificationKey2025,
+}
+
+export enum KeyType {
+    EC, RSA, Oct
+}
+
+export enum CurveType {
+    Ed25519, JubJub
+}
+
+export struct PublicKeyJwk {
+    kty: KeyType,
+    crv: CurveType,
+    x: Field,
+}
+
+export struct PublicKeyMultibase {
+    key: Opaque<"string">,
+}
+
+export struct PublicKey {
+    id: Opaque<"string">,
+    type: VerificationMethodType,
+    publicKey: Either<PublicKeyJwk, PublicKeyMultibase>,
+    allowedUsages: AllowedUsages,
+}
+
+export enum ActionType {
+    Authentication,
+    AssertionMethod,
+    KeyAgreement,
+    CapabilityInvocation,
+    CapabilityDelegation,
+}
+
+struct AllowedUsages {
+    authentication: Boolean,
+    assertionMethod: Boolean,
+    keyAgreement: Boolean,
+    capabilityInvocation: Boolean,
+    capabilityDelegation: Boolean,
+}
+
+witness localSecretKey(): Bytes<32>;
+
+constructor() {
+    active = true;
+    controllerPublicKey = disclose(publicKey(localSecretKey()));
+}
+
+pure circuit publicKey(sk: Bytes<32>): Bytes<32> {
+    return persistentHash<Vector<2, Bytes<32>>>([pad(32, "midnames:did:pk"), sk]);
+}
+
+export circuit deactivate(): [] {
+    assert(active, "DID is already inactive");
+    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+    active = false;
+}
+
+export circuit addKey(key: PublicKey): [] {
+    assert(active, "DID is inactive");
+    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+    const d_key = disclose(key);
+    assert(!keyRing.member(d_key.id), "Cannot repeat Key id");
+    keyRing.insert(d_key.id, d_key);
+}
+
+export circuit removeKey(keyId: Opaque<"string">): [] {
+    assert(active, "DID is inactive");
+    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+    const d_keyId = disclose(keyId);
+    assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
+    keyRing.remove(d_keyId);
+}
+
+export circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
+    assert(active, "DID is inactive");
+    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+
+    const d_key = keyRing.lookup(disclose(keyId));
+    assert(keyRing.member(d_key.id), "Key is not in KeyRing");
+
+    keyRing.remove(d_key.id);
+
+    const d_actionType = disclose(actionType);
+    if (d_actionType == ActionType.Authentication) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, assertionMethod: true }
+        });
+    } else if (d_actionType == ActionType.AssertionMethod) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, assertionMethod: true }
+        });
+    } else if (d_actionType == ActionType.KeyAgreement) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, keyAgreement: true }
+        });
+    } else if (d_actionType == ActionType.CapabilityInvocation) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, capabilityInvocation: true }
+        });
+    } else if (d_actionType == ActionType.CapabilityDelegation) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, capabilityDelegation: true }
+        });
+    }
+
+    keyRing.insert(d_key.id, d_key);
+}
+
+export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
+    assert(active, "DID is inactive");
+    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+
+    const d_key = keyRing.lookup(disclose(keyId));
+    assert(keyRing.member(d_key.id), "Key is not in KeyRing");
+
+    keyRing.remove(d_key.id);
+
+    const d_actionType = disclose(actionType);
+    if (d_actionType == ActionType.Authentication) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, assertionMethod: false }
+        });
+    } else if (d_actionType == ActionType.AssertionMethod) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, assertionMethod: false }
+        });
+    } else if (d_actionType == ActionType.KeyAgreement) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, keyAgreement: false }
+        });
+    } else if (d_actionType == ActionType.CapabilityInvocation) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, capabilityInvocation: false }
+        });
+    } else if (d_actionType == ActionType.CapabilityDelegation) {
+        keyRing.insert(d_key.id, PublicKey{ ...d_key,
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, capabilityDelegation: false }
+        });
+    }
+
+    keyRing.insert(d_key.id, d_key);
+}
