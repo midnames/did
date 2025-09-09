@@ -93,8 +93,6 @@ export circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType):
     const d_key = keyRing.lookup(disclose(keyId));
     assert(keyRing.member(d_key.id), "Key is not in KeyRing");
 
-    keyRing.remove(d_key.id);
-
     const d_actionType = disclose(actionType);
     if (d_actionType == ActionType.Authentication) {
         keyRing.insert(d_key.id, PublicKey{ ...d_key,
@@ -127,8 +125,6 @@ export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionTyp
 
     const d_key = keyRing.lookup(disclose(keyId));
     assert(keyRing.member(d_key.id), "Key is not in KeyRing");
-
-    keyRing.remove(d_key.id);
 
     const d_actionType = disclose(actionType);
     if (d_actionType == ActionType.Authentication) {
