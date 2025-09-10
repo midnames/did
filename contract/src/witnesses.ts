@@ -1,30 +1,22 @@
-import { WitnessContext } from '@midnight-ntwrk/compact-runtime';
-import { Ledger } from './managed/did/contract/index.cjs';
+import { WitnessContext } from "@midnight-ntwrk/compact-runtime";
+import { Ledger } from "./managed/did/contract/index.cjs";
 
-export type MidnamesPrivateState = {
-  readonly local_secret_key: Uint8Array;
-  readonly multiple_local_secret_keys: Uint8Array[];
+export type DidPrivateState = {
+  readonly localSecretKey: Uint8Array;
+  readonly multiple_localSecretKeys: Uint8Array[];
 };
 
-export const createMidnamesSecretState = (
-  local_secret_key: Uint8Array,
-  multiple_local_secret_keys: Uint8Array[] = []
-): MidnamesPrivateState => ({
-  local_secret_key,
-  multiple_local_secret_keys,
+export const createDidSecretState = (
+  localSecretKey: Uint8Array
+): DidPrivateState => ({
+  localSecretKey
 });
 
 export const witnesses = {
-  local_secret_key: ({
-    privateState,
-  }: WitnessContext<Ledger, MidnamesPrivateState>): [MidnamesPrivateState, Uint8Array] => [
-    privateState,
-    privateState.local_secret_key,
-  ],
-  multiple_local_secret_keys: ({
-    privateState,
-  }: WitnessContext<Ledger, MidnamesPrivateState>): [MidnamesPrivateState, Uint8Array[]] => [
-    privateState,
-    privateState.multiple_local_secret_keys,
-  ],
+  localSecretKey: ({
+    privateState
+  }: WitnessContext<Ledger, DidPrivateState>): [
+    DidPrivateState,
+    Uint8Array
+  ] => [privateState, privateState.localSecretKey]
 };
