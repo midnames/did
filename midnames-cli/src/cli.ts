@@ -664,65 +664,6 @@ const handleCreateDidFromFile = async (
   }
 };
 
-const handleLookupDid = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
-  rli: Interface
-): Promise<void> => {
-  try {
-    const didId = await rli.question(
-      "Enter the DID to lookup (e.g., did:midnight:example): "
-    );
-    if (!didId.trim()) {
-      logger.error("DID identifier cannot be empty");
-      return;
-    }
-
-    logger.info(`Looking up DID: ${didId.trim()}`);
-    const contractAddress = contract.deployTxData.public.contractAddress;
-
-    // Get raw data first
-    const didData = await api.getDid(providers, contractAddress, didId.trim());
-
-    if (didData) {
-      logger.info(`\n=== DID Information ===`);
-      logger.info(`DID ID: ${didData.id}`);
-      logger.info(`Context entries: ${didData.context.length}`);
-      logger.info(
-        `Verification methods: ${didData.verificationMethods.length}`
-      );
-      logger.info(
-        `Authentication methods: ${didData.authenticationMethods.length}`
-      );
-      logger.info(`Services: ${didData.services.length}`);
-      logger.info(`Credentials: ${didData.credentials.length}`);
-      logger.info(
-        `Authorized controllers: ${didData.authorizedControllers.length}`
-      );
-
-      const showDetails = await rli.question(
-        "\nShow detailed DID data? (y/n): "
-      );
-      if (
-        showDetails.toLowerCase() === "y" ||
-        showDetails.toLowerCase() === "yes"
-      ) {
-        // format the data for detailed view
-        const formattedDidData = await api.getDidFormatted(
-          providers,
-          contractAddress,
-          didId.trim()
-        );
-        logger.info("\n=== Detailed DID Data ===");
-        logger.info(JSON.stringify(formattedDidData, null, 2));
-      }
-    } else {
-      logger.info("DID not found or error occurred.");
-    }
-  } catch (error) {
-    logger.error(`Failed to lookup DID: ${error}`);
-  }
-};
 
 const handleViewContractInfo = async (
   providers: MidnamesProviders,
@@ -738,64 +679,6 @@ const handleViewContractInfo = async (
     logger.error(`Failed to get contract info: ${error}`);
   }
 };
-
-const handleDidOperations = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
-  rli: Interface
-): Promise<void> => {
-  try {
-    const didId = await rli.question(
-      "Enter the DID to perform operations on (e.g., did:midnight:example): "
-    );
-    if (!didId.trim()) {
-      logger.error("DID identifier cannot be empty");
-      return;
-    }
-
-    // Verify DID exists
-    const contractAddress = contract.deployTxData.public.contractAddress;
-    const didData = await api.getDid(providers, contractAddress, didId.trim());
-    if (!didData) {
-      logger.error(`DID not found: ${didId.trim()}`);
-      return;
-    }
-
-    logger.info(`Working with DID: ${didId.trim()}`);
-    
-    while (true) {
-      const choice = await rli.question(SELECT_DID_OPERATION);
-      
-      switch (choice) {
-        case "1":
-          await handleViewDidDetails(providers, contract, didId.trim());
-          break;
-        case "2":
-          await handleAddVerificationKey(providers, contract, rli, didId.trim());
-          break;
-        case "3":
-          await handleRemoveVerificationKey(providers, contract, rli, didId.trim());
-          break;
-        case "4":
-          await handleAddKeyAllowedUsage(providers, contract, rli, didId.trim());
-          break;
-        case "5":
-          await handleRemoveKeyAllowedUsage(providers, contract, rli, didId.trim());
-          break;
-        case "6":
-          await handleDeactivateDid(contract, rli, didId.trim());
-          break;
-        case "7":
-          logger.info("Returning to main menu...");
-          return;
-        default:
-          logger.error(`Invalid choice: ${choice}`);
-      }
-    }
-  } catch (error) {
-    logger.error(`Failed to perform operations on DID: ${error}`) 
-  }
-}
 
 const handleViewDidDetails = async (
   providers: MidnamesProviders,
