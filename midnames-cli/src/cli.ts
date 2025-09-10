@@ -230,18 +230,18 @@ export const run = async (
       config.indexer = mapContainerPort(
         env,
         config.indexer,
-        "did-indexer"
+        "midnames-indexer"
       );
       config.indexerWS = mapContainerPort(
         env,
         config.indexerWS,
-        "did-indexer"
+        "midnames-indexer"
       );
-      config.node = mapContainerPort(env, config.node, "did-node");
+      config.node = mapContainerPort(env, config.node, "midnames-node");
       config.proofServer = mapContainerPort(
         env,
         config.proofServer,
-        "did-proof-server"
+        "midnames-proof-server"
       );
     }
   }
