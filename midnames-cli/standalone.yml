@@ -1,7 +1,7 @@
 services:
   proof-server:
     container_name: "midnames-proof-server"
-    image: "midnight-proof-server:prebaked"
+    image: "faculerena/proof-server-prebaked:4.0.0"
     command: ["midnight-proof-server -v --network undeployed"]
     ports:
       - "6300"
