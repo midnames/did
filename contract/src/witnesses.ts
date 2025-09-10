@@ -3,7 +3,6 @@ import { Ledger } from "./managed/did/contract/index.cjs";
 
 export type DidPrivateState = {
   readonly localSecretKey: Uint8Array;
-  readonly multiple_localSecretKeys: Uint8Array[];
 };
 
 export const createDidSecretState = (
