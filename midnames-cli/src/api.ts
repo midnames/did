@@ -1,8 +1,8 @@
 import {
   Did,
-  type MidnamesPrivateState,
+  type DidPrivateState,
   witnesses,
-  createMidnamesSecretState,
+  createDidSecretState,
 } from "@midnight-ntwrk/midnight-did-contract";
 import {
   type CoinInfo,
@@ -32,11 +32,11 @@ import { type Logger } from "pino";
 import * as Rx from "rxjs";
 import { WebSocket } from "ws";
 import {
-  type MidnamesCircuits,
-  type MidnamesContract,
-  MidnamesPrivateStateId,
-  type MidnamesProviders,
-  type DeployedMidnamesContract,
+  type DidCircuits,
+  type DidContract,
+  DidPrivateStateId,
+  type DidProviders,
+  type DeployedDidContract,
 } from "./common-types";
 import { type Config, contractConfig } from "./config";
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
@@ -63,39 +63,39 @@ let logger: Logger;
 // @ts-expect-error: It's needed to enable WebSocket usage through apollo
 globalThis.WebSocket = WebSocket;
 
-export const midnamesContractInstance: MidnamesContract = new Did.Contract(
+export const DidContractInstance: DidContract = new Did.Contract(
   witnesses
 );
 
 export const joinContract = async (
-  providers: MidnamesProviders,
+  providers: DidProviders,
   contractAddress: string
-): Promise<DeployedMidnamesContract> => {
+): Promise<DeployedDidContract> => {
   const localSecretKey = randomBytes(32);
-  const initialPrivateState = createMidnamesSecretState(
+  const initialPrivateState = createDidSecretState(
     localSecretKey,
     Array.from({ length: 5 }, () => new Uint8Array(32))
   );
 
-  const midnamesContract = await findDeployedContract(providers, {
+  const DidContract = await findDeployedContract(providers, {
     contractAddress,
-    contract: midnamesContractInstance,
-    privateStateId: MidnamesPrivateStateId,
+    contract: DidContractInstance,
+    privateStateId: DidPrivateStateId,
     initialPrivateState,
   });
   logger.info(
-    `Joined contract at address: ${midnamesContract.deployTxData.public.contractAddress}
+    `Joined contract at address: ${DidContract.deployTxData.public.contractAddress}
 Witness: 
 - local_secret_key: ${Buffer.from(localSecretKey).toString("hex")}
     `
   );
-  return midnamesContract;
+  return DidContract;
 };
 
 export const deploy = async (
-  providers: MidnamesProviders,
-  privateState: MidnamesPrivateState
-): Promise<DeployedMidnamesContract> => {
+  providers: DidProviders,
+  privateState: DidPrivateState
+): Promise<DeployedDidContract> => {
   logger.info("Deploying midnames contract...");
 
   // default context for contract initialization
@@ -104,20 +104,20 @@ export const deploy = async (
   logger.debug(
     `DEBUG: About to deploy with NetworkId: ${getZswapNetworkId()}, LedgerNetworkId: ${getLedgerNetworkId()}`
   );
-  logger.debug(`DEBUG: PrivateStateId: ${MidnamesPrivateStateId}`);
+  logger.debug(`DEBUG: PrivateStateId: ${DidPrivateStateId}`);
   logger.debug(`DEBUG: DefaultContext: ${JSON.stringify(defaultContext)}`);
 
   try {
-    const midnamesContract = await deployContract(providers, {
-      contract: midnamesContractInstance,
-      privateStateId: MidnamesPrivateStateId,
+    const DidContract = await deployContract(providers, {
+      contract: DidContractInstance,
+      privateStateId: DidPrivateStateId,
       initialPrivateState: privateState,
     });
     logger.debug("DEBUG: deployContract succeeded");
     logger.info(
-      `Deployed contract at address: ${midnamesContract.deployTxData.public.contractAddress}`
+      `Deployed contract at address: ${DidContract.deployTxData.public.contractAddress}`
     );
-    return midnamesContract;
+    return DidContract;
   } catch (error) {
     logger.error(`ERROR: deployContract failed: ${error}`);
     throw error;
@@ -125,14 +125,14 @@ export const deploy = async (
 };
 
 export const displayContractInfo = async (
-  providers: MidnamesProviders,
-  midnamesContract: DeployedMidnamesContract
+  providers: DidProviders,
+  DidContract: DeployedDidContract
 ): Promise<{
   contractAddress: string;
   active: boolean;
   publicKey: Uint8Array<ArrayBufferLike> | null;
 }> => {
-  const contractAddress = midnamesContract.deployTxData.public.contractAddress;
+  const contractAddress = DidContract.deployTxData.public.contractAddress;
 
   // contract state to count DIDs
   const state =
@@ -147,7 +147,7 @@ export const displayContractInfo = async (
 };
 
 export const getDid = async (
-  providers: MidnamesProviders,
+  providers: DidProviders,
   contractAddress: string,
   didId: string
 ): Promise<any | null> => {
@@ -224,7 +224,7 @@ export interface DidDocument {
 }
 
 export const getDidFormatted = async (
-  providers: MidnamesProviders,
+  providers: DidProviders,
   contractAddress: string,
   didId: string
 ): Promise<DidDocument | null> => {
@@ -442,7 +442,7 @@ export const configureProviders = async (
     await createWalletAndMidnightProvider(wallet);
   return {
     privateStateProvider: levelPrivateStateProvider<
-      typeof MidnamesPrivateStateId
+      typeof DidPrivateStateId
     >({
       privateStateStoreName: contractConfig.privateStateStoreName,
     }),
@@ -450,7 +450,7 @@ export const configureProviders = async (
       config.indexer,
       config.indexerWS
     ),
-    zkConfigProvider: new NodeZkConfigProvider<MidnamesCircuits>(
+    zkConfigProvider: new NodeZkConfigProvider<DidCircuits>(
       contractConfig.zkConfigPath
     ),
     proofProvider: httpClientProofProvider(config.proofServer),
@@ -513,9 +513,9 @@ const createDefaultCredential = (): any => ({
 });
 
 export const createDidFromDocument = async (
-  midnamesContract: DeployedMidnamesContract,
+  DidContract: DeployedDidContract,
   didDocument: DidJsonDocument,
-  providers?: MidnamesProviders,
+  providers?: DidProviders,
   customPrivateKey?: Uint8Array,
   multipleLocalSecretKeys?: Uint8Array[]
 ): Promise<{ txId: string; didId: string }> => {
@@ -641,18 +641,18 @@ export const createDidFromDocument = async (
         mlsk.push(new Uint8Array(32));
       }
 
-      const customPrivateState = createMidnamesSecretState(
+      const customPrivateState = createDidSecretState(
         customPrivateKey,
         mlsk
       );
       await providers.privateStateProvider.set(
-        MidnamesPrivateStateId,
+        DidPrivateStateId,
         customPrivateState
       );
       logger.info("Using custom private key for witness");
     } else if (providers) {
       const currentPrivateState = await providers.privateStateProvider.get(
-        MidnamesPrivateStateId
+        DidPrivateStateId
       );
       if (currentPrivateState) {
         logger.info("Using existing private state with deployment keys");
@@ -694,7 +694,7 @@ export const createDidFromDocument = async (
       new Uint8Array(32)
     );
 
-    const finalizedTxData = await midnamesContract.callTx.create_did(
+    const finalizedTxData = await DidContract.callTx.create_did(
       didIdBytes,
       authVector,
       verificationVector,
@@ -719,7 +719,7 @@ export const createDidFromDocument = async (
 };
 
 export const addVerificationKey = async (
-  midnamesContract: DeployedMidnamesContract,
+  DidContract: DeployedDidContract,
   didId: string,
   keyData: {
     id: string;
@@ -774,7 +774,7 @@ export const addVerificationKey = async (
       },
     };
 
-    const finalizedTxData = await midnamesContract.callTx.addKey(publicKey);
+    const finalizedTxData = await DidContract.callTx.addKey(publicKey);
 
     logger.info(
       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
@@ -790,7 +790,7 @@ export const addVerificationKey = async (
 };
 
 export const removeVerificationKey = async (
-  midnamesContract: DeployedMidnamesContract,
+  DidContract: DeployedDidContract,
   didId: string,
   keyId: string
 ): Promise<{ txId: string }> => {
@@ -799,7 +799,7 @@ export const removeVerificationKey = async (
 
     const keyIdBytes = stringToUint8Array(keyId, 64);
 
-    const finalizedTxData = await midnamesContract.callTx.removeKey(keyIdBytes);
+    const finalizedTxData = await DidContract.callTx.removeKey(keyIdBytes);
 
     logger.info(
       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
@@ -815,7 +815,7 @@ export const removeVerificationKey = async (
 };
 
 export const addKeyAllowedUsage = async (
-  midnamesContract: DeployedMidnamesContract,
+  midnamesContract: DeployedDidContract,
   didId: string,
   keyId: string,
   actionType: string
@@ -867,7 +867,7 @@ export const addKeyAllowedUsage = async (
 };
 
 export const removeKeyAllowedUsage = async (
-  midnamesContract: DeployedMidnamesContract,
+  midnamesContract: DeployedDidContract,
   didId: string,
   keyId: string,
   actionType: string
@@ -919,7 +919,7 @@ export const removeKeyAllowedUsage = async (
 };
 
 export const deactivateDid = async (
-  didContract: DeployedMidnamesContract,
+  didContract: DeployedDidContract,
   didId: string
 ): Promise<{ txId: string }> => {
   try {

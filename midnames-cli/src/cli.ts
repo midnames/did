@@ -8,12 +8,12 @@ import {
   type DockerComposeEnvironment,
 } from "testcontainers";
 import {
-  type MidnamesProviders,
-  type DeployedMidnamesContract,
+  type DidProviders,
+  type DeployedDidContract,
 } from "./common-types";
 import { type Config, StandaloneConfig } from "./config";
 import * as api from "./api";
-import { createMidnamesSecretState } from "@midnight-ntwrk/midnight-did-contract";
+import { createDidSecretState } from "@midnight-ntwrk/midnight-did-contract";
 import { v7 as uuidv7 } from "uuid";
 import * as fs from "node:fs";
 import { type DidJsonDocument } from "./types";
@@ -29,9 +29,9 @@ const GENESIS_MINT_WALLET_SEED =
 
 const CREATE_UPDATE_OR_VIEW = `
 You can do one of the following:
-  1. Create Midnames DID contract
-  2. Update existing Midnames DID contract
-  3. View existing Midnames DID contract
+  1. Create Did DID contract
+  2. Update existing Did DID contract
+  3. View existing Did DID contract
   4. Exit
 Which would you like to do? `;
 
@@ -98,12 +98,12 @@ const buildWalletFromSeed = async (
 
 
 async function createDidContract(
-  providers: MidnamesProviders
-): Promise<DeployedMidnamesContract> {
-  logger.info("Deploying new Midnames DID contract...");
+  providers: DidProviders
+): Promise<DeployedDidContract> {
+  logger.info("Deploying new Did DID contract...");
 
   const localSecretKey = api.randomBytes(32);
-  const privateState = createMidnamesSecretState(localSecretKey, []);
+  const privateState = createDidSecretState(localSecretKey);
   const contract = await api.deploy(providers, privateState);
 
   // Display contract information
@@ -117,9 +117,9 @@ async function createDidContract(
 };
 
 async function updateDidContract(
-  providers: MidnamesProviders,
+  providers: DidProviders,
   rli: Interface
-): Promise<DeployedMidnamesContract> {
+): Promise<DeployedDidContract> {
   const contractAddress = await rli.question(
     "What is the contract address (in hex)? "
   );  
@@ -157,9 +157,9 @@ async function updateDidContract(
 };
 
 async function viewDidContract(
-  providers: MidnamesProviders,
+  providers: DidProviders,
   rli: Interface
-): Promise<DeployedMidnamesContract> {
+): Promise<DeployedDidContract> {
   const contractAddress = await rli.question(
     "What is the contract address (in hex)? "
   );
@@ -179,9 +179,9 @@ async function getDidId(rli: Interface): Promise<string> {
 };
 
 async function mainLoop(
-  providers: MidnamesProviders,
+  providers: DidProviders,
   rli: Interface
-): Promise<DeployedMidnamesContract | null> {
+): Promise<DeployedDidContract | null> {
   while (true) {
     const choice = await rli.question(CREATE_UPDATE_OR_VIEW);
     switch (choice) {
@@ -230,18 +230,18 @@ export const run = async (
       config.indexer = mapContainerPort(
         env,
         config.indexer,
-        "midnames-indexer"
+        "did-indexer"
       );
       config.indexerWS = mapContainerPort(
         env,
         config.indexerWS,
-        "midnames-indexer"
+        "did-indexer"
       );
-      config.node = mapContainerPort(env, config.node, "midnames-node");
+      config.node = mapContainerPort(env, config.node, "did-node");
       config.proofServer = mapContainerPort(
         env,
         config.proofServer,
-        "midnames-proof-server"
+        "did-proof-server"
       );
     }
   }
@@ -287,8 +287,8 @@ export const run = async (
 };
 
 const handleCreateDidInteractive = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
+  providers: DidProviders,
+  contract: DeployedDidContract,
   rli: Interface
 ): Promise<void> => {
   try {
@@ -299,8 +299,8 @@ const handleCreateDidInteractive = async (
 };
 
 const createDidWithManualInput = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
+  providers: DidProviders,
+  contract: DeployedDidContract,
   rli: Interface
 ): Promise<void> => {
   logger.info("\n=== DID Creation ===");
@@ -498,8 +498,8 @@ const createDidWithManualInput = async (
 };
 
 const handleCreateDidFromFile = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
+  providers: DidProviders,
+  contract: DeployedDidContract,
   rli: Interface
 ): Promise<void> => {
   try {
@@ -666,8 +666,8 @@ const handleCreateDidFromFile = async (
 
 
 const handleViewContractInfo = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract
+  providers: DidProviders,
+  contract: DeployedDidContract
 ): Promise<void> => {
   try {
     const info = await api.displayContractInfo(providers, contract);
@@ -681,8 +681,8 @@ const handleViewContractInfo = async (
 };
 
 const handleViewDidDetails = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
+  providers: DidProviders,
+  contract: DeployedDidContract,
   didId: string
 ): Promise<void> => {
   try {
@@ -705,8 +705,8 @@ const handleViewDidDetails = async (
 };
 
 const handleAddVerificationKey = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
+  providers: DidProviders,
+  contract: DeployedDidContract,
   rli: Interface,
   didId: string
 ): Promise<void> => {
@@ -779,8 +779,8 @@ const handleAddVerificationKey = async (
 };
 
 const handleRemoveVerificationKey = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
+  providers: DidProviders,
+  contract: DeployedDidContract,
   rli: Interface,
   didId: string
 ): Promise<void> => {
@@ -822,8 +822,8 @@ const handleRemoveVerificationKey = async (
 };
 
 const handleAddKeyAllowedUsage = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
+  providers: DidProviders,
+  contract: DeployedDidContract,
   rli: Interface,
   didId: string
 ): Promise<void> => {
@@ -883,8 +883,8 @@ Choose option: `);
 };
 
 const handleRemoveKeyAllowedUsage = async (
-  providers: MidnamesProviders,
-  contract: DeployedMidnamesContract,
+  providers: DidProviders,
+  contract: DeployedDidContract,
   rli: Interface,
   didId: string
 ): Promise<void> => {
@@ -944,7 +944,7 @@ Choose option: `);
 };
 
 const handleDeactivateDid = async (
-  contract: DeployedMidnamesContract,
+  contract: DeployedDidContract,
   rli: Interface,
   didId: string
 ): Promise<void> => {

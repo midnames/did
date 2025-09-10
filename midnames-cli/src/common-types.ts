@@ -1,17 +1,17 @@
-import { Midnames, type MidnamesPrivateState } from '@midnames/core';
+import { Did, type DidPrivateState } from '@midnight-ntwrk/midnight-did-contract';
 import type { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 import type { DeployedContract, FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
 
-export type MidnamesCircuits = ImpureCircuitId<Midnames.Contract<MidnamesPrivateState>>;
+export type DidCircuits = ImpureCircuitId<Did.Contract<DidPrivateState>>;
 
-export const MidnamesPrivateStateId = 'midnamesPrivateState';
+export const DidPrivateStateId = 'DidPrivateState';
 
-export type MidnamesProviders = MidnightProviders<
-  MidnamesCircuits,
-  typeof MidnamesPrivateStateId,
-  MidnamesPrivateState
+export type DidProviders = MidnightProviders<
+  DidCircuits,
+  typeof DidPrivateStateId,
+  DidPrivateState
 >;
 
-export type MidnamesContract = Midnames.Contract<MidnamesPrivateState>;
+export type DidContract = Did.Contract<DidPrivateState>;
 
-export type DeployedMidnamesContract = DeployedContract<MidnamesContract> | FoundContract<MidnamesContract>;
+export type DeployedDidContract = DeployedContract<DidContract> | FoundContract<DidContract>;
