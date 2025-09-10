@@ -732,7 +732,8 @@ const handleViewContractInfo = async (
     const info = await api.displayContractInfo(providers, contract);
     logger.info(`\n=== Contract Information ===`);
     logger.info(`Contract Address: ${info.contractAddress}`);
-    logger.info(`Total DIDs: ${info.didCount}`);
+    logger.info(`Controller Public Key: ${info.publicKey}$`)
+    logger.info(`Active DID: ${info.active}`);
   } catch (error) {
     logger.error(`Failed to get contract info: ${error}`);
   }

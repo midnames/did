@@ -1,5 +1,5 @@
 import {
-  Midnames,
+  Did,
   type MidnamesPrivateState,
   witnesses,
   createMidnamesSecretState,
@@ -63,7 +63,7 @@ let logger: Logger;
 // @ts-expect-error: It's needed to enable WebSocket usage through apollo
 globalThis.WebSocket = WebSocket;
 
-export const midnamesContractInstance: MidnamesContract = new Midnames.Contract(
+export const midnamesContractInstance: MidnamesContract = new Did.Contract(
   witnesses
 );
 
@@ -112,7 +112,6 @@ export const deploy = async (
       contract: midnamesContractInstance,
       privateStateId: MidnamesPrivateStateId,
       initialPrivateState: privateState,
-      args: [defaultContext],
     });
     logger.debug("DEBUG: deployContract succeeded");
     logger.info(
@@ -128,19 +127,23 @@ export const deploy = async (
 export const displayContractInfo = async (
   providers: MidnamesProviders,
   midnamesContract: DeployedMidnamesContract
-): Promise<{ contractAddress: string; didCount: bigint }> => {
+): Promise<{
+  contractAddress: string;
+  active: boolean;
+  publicKey: Uint8Array<ArrayBufferLike> | null;
+}> => {
   const contractAddress = midnamesContract.deployTxData.public.contractAddress;
 
   // contract state to count DIDs
   const state =
     await providers.publicDataProvider.queryContractState(contractAddress);
 
-  const didCount = state ? Midnames.ledger(state.data).did_context.size() : 0n;
+  const active = state ? Did.ledger(state.data).active : false;
+  const pk = state ? Did.ledger(state.data).controllerPublicKey : null;
 
   logger.info(`Contract Address: ${contractAddress}`);
-  logger.info(`Total DIDs: ${didCount}`);
-
-  return { contractAddress, didCount };
+  logger.info(`Controller Public Key: ${pk}`);
+  return { contractAddress, active, publicKey: pk };
 };
 
 export const getDid = async (
@@ -149,8 +152,6 @@ export const getDid = async (
   didId: string
 ): Promise<any | null> => {
   try {
-    const didIdBytes = stringToUint8Array(didId, 64);
-
     const state =
       await providers.publicDataProvider.queryContractState(contractAddress);
     if (!state) {
@@ -158,65 +159,23 @@ export const getDid = async (
       return null;
     }
 
-    const ledgerState = Midnames.ledger(state.data);
+    const ledgerState = Did.ledger(state.data);
 
-    // Check if DID exists by looking in did_context (since that's what always gets populated)
-    const contextExists = ledgerState.did_context.member(didIdBytes);
-    if (!contextExists) {
-      logger.info(`DID not found: ${didId}`);
-      return null;
-    }
     const didData = {
-      id: didId,
-      exists: true,
-      context: [] as any[],
-      verificationMethods: [] as any[],
-      authenticationMethods: [] as any[],
-      services: [] as any[],
-      credentials: [] as any[],
-      authorizedControllers: [] as any[],
+      id: ledgerState.id,
+      active: ledgerState.active,
+      controllerPublicKey: ledgerState.controllerPublicKey,
+      keyRing: {} as any,
     };
 
-    const contextList = ledgerState.did_context.lookup(didIdBytes);
-    for (const ctx of contextList) {
-      didData.context.push(ctx);
-    }
+    // Use the iterator functionality provided by keyRing
+    const keyRingIterator = ledgerState.keyRing[Symbol.iterator]();
+    let iteratorResult = keyRingIterator.next();
 
-    // Put the w3c uri first
-    if (didData.context.length > 1) {
-      const w3cIndex = didData.context.findIndex(
-        (ctx: any) => ctx.uri === "https://www.w3.org/ns/did/v1"
-      );
-      if (w3cIndex > 0) {
-        const [w3cCtx] = didData.context.splice(w3cIndex, 1);
-        didData.context.unshift(w3cCtx);
-      }
-    }
-
-    const vmList = ledgerState.did_verification_methods.lookup(didIdBytes);
-    for (const vm of vmList) {
-      didData.verificationMethods.push(vm);
-    }
-
-    const authList = ledgerState.did_authentication_methods.lookup(didIdBytes);
-    for (const auth of authList) {
-      didData.authenticationMethods.push(auth);
-    }
-
-    const serviceList = ledgerState.did_services.lookup(didIdBytes);
-    for (const service of serviceList) {
-      didData.services.push(service);
-    }
-
-    const credentialList = ledgerState.did_credentials.lookup(didIdBytes);
-    for (const credential of credentialList) {
-      didData.credentials.push(credential);
-    }
-
-    const controllerSet =
-      ledgerState.did_authorized_controllers.lookup(didIdBytes);
-    for (const controller of controllerSet) {
-      didData.authorizedControllers.push(controller);
+    while (!iteratorResult.done) {
+      const [keyId, publicKey] = iteratorResult.value;
+      didData.keyRing[keyId] = publicKey;
+      iteratorResult = keyRingIterator.next();
     }
 
     return didData;
@@ -513,7 +472,6 @@ export const buildFreshWallet = async (
   return await buildWalletAndWaitForFunds(config, seed, filename);
 };
 
-
 const createDefaultContext = () => ({
   uri: "",
 });
@@ -623,32 +581,35 @@ export const createDidFromDocument = async (
           right: {
             id: auth.id.split("#")[1] || "auth-1",
             type: auth.type || "BIP32-Ed25519",
-            key: auth.publicKeyHex ? {
-              is_left: true,
-              left: { hex: parsePublicKeyHex(auth.publicKeyHex) },
-              right: { address: new Uint8Array(104) },
-            } : auth.publicKeyMultibase ? {
-              is_left: true,
-              left: { hex: parsePublicKeyHex(auth.publicKeyMultibase) },
-              right: { address: new Uint8Array(104) },
-            } : auth.AdaAddress ? {
-              is_left: false,
-              left: { hex: new Uint8Array(130) },
-              right: { address: parseAdaAddress(auth.AdaAddress) },
-            } : {
-              is_left: true,
-              left: { hex: new Uint8Array(130) },
-              right: { address: new Uint8Array(104) },
-            },
+            key: auth.publicKeyHex
+              ? {
+                  is_left: true,
+                  left: { hex: parsePublicKeyHex(auth.publicKeyHex) },
+                  right: { address: new Uint8Array(104) },
+                }
+              : auth.publicKeyMultibase
+                ? {
+                    is_left: true,
+                    left: { hex: parsePublicKeyHex(auth.publicKeyMultibase) },
+                    right: { address: new Uint8Array(104) },
+                  }
+                : auth.AdaAddress
+                  ? {
+                      is_left: false,
+                      left: { hex: new Uint8Array(130) },
+                      right: { address: parseAdaAddress(auth.AdaAddress) },
+                    }
+                  : {
+                      is_left: true,
+                      left: { hex: new Uint8Array(130) },
+                      right: { address: new Uint8Array(104) },
+                    },
             controller: toControllerVector(auth.controller || didDocument.id),
             OtherKeys: { is_some: false, value: [["key1", "key2"]] },
           },
         };
       }
     }) || [createDefaultAuthenticationMethod()];
-
-
-    
 
     const services = didDocument.service?.map((svc) => ({
       id: svc.id?.split("#")[1] || "default-service",
@@ -742,8 +703,6 @@ export const createDidFromDocument = async (
       contextVector,
       addressVector
     );
-
-    
 
     logger.info(
       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
@@ -862,10 +821,12 @@ export const addKeyAllowedUsage = async (
   actionType: string
 ): Promise<{ txId: string }> => {
   try {
-    logger.info(`Adding allowed usage ${actionType} to key ${keyId} for DID: ${didId}`);
+    logger.info(
+      `Adding allowed usage ${actionType} to key ${keyId} for DID: ${didId}`
+    );
 
     const keyIdBytes = stringToUint8Array(keyId, 64);
-    
+
     let actionTypeEnum: number;
     switch (actionType) {
       case "Authentication":
@@ -912,10 +873,12 @@ export const removeKeyAllowedUsage = async (
   actionType: string
 ): Promise<{ txId: string }> => {
   try {
-    logger.info(`Removing allowed usage ${actionType} from key ${keyId} for DID: ${didId}`);
+    logger.info(
+      `Removing allowed usage ${actionType} from key ${keyId} for DID: ${didId}`
+    );
 
     const keyIdBytes = stringToUint8Array(keyId, 64);
-    
+
     let actionTypeEnum: number;
     switch (actionType) {
       case "Authentication":
@@ -956,13 +919,13 @@ export const removeKeyAllowedUsage = async (
 };
 
 export const deactivateDid = async (
-  midnamesContract: DeployedMidnamesContract,
+  didContract: DeployedMidnamesContract,
   didId: string
 ): Promise<{ txId: string }> => {
   try {
     logger.info(`Deactivating DID: ${didId}`);
 
-    const finalizedTxData = await midnamesContract.callTx.deactivate();
+    const finalizedTxData = await didContract.callTx.deactivate();
 
     logger.info(
       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
