@@ -187,7 +187,7 @@ async function mainLoop(
     switch (choice) {
       case "1":
         const new_did_contract_address = await createDidContract(providers);
-        await handleCreateDidInteractive(providers, new_did_contract_address, rli);
+        // await handleCreateDidInteractive(providers, new_did_contract_address, rli);
       case "2":
         return await updateDidContract(providers, rli);
       case "3":
@@ -710,72 +710,72 @@ const handleAddVerificationKey = async (
   rli: Interface,
   didId: string
 ): Promise<void> => {
-  try {
-    logger.info("\n--- Add Verification Key ---");
+  // try {
+  //   logger.info("\n--- Add Verification Key ---");
     
-    const keyId = await rli.question("Key ID (e.g., 'keys-2'): ");
-    if (!keyId.trim()) {
-      logger.error("Key ID cannot be empty");
-      return;
-    }
+  //   const keyId = await rli.question("Key ID (e.g., 'keys-2'): ");
+  //   if (!keyId.trim()) {
+  //     logger.error("Key ID cannot be empty");
+  //     return;
+  //   }
     
-    const keyType = await rli.question("Key type (press Enter for 'BIP32-Ed25519'): ") || "BIP32-Ed25519";
+  //   const keyType = await rli.question("Key type (press Enter for 'BIP32-Ed25519'): ") || "BIP32-Ed25519";
     
-    const keyChoice = await rli.question(
-      "Key data type: 1) Public Key Hex, 2) ADA Address (default: 1): "
-    );
+  //   const keyChoice = await rli.question(
+  //     "Key data type: 1) Public Key Hex, 2) ADA Address (default: 1): "
+  //   );
     
-    let publicKeyHex = "";
-    let adaAddress = "";
+  //   let publicKeyHex = "";
+  //   let adaAddress = "";
     
-    if (keyChoice.trim() === "2") {
-      adaAddress = await rli.question("ADA Address: ");
-      if (!adaAddress.trim()) {
-        logger.error("ADA Address cannot be empty");
-        return;
-      }
-    } else {
-      publicKeyHex = await rli.question("Public Key Hex (with 0x prefix): ");
-      if (!publicKeyHex.trim()) {
-        logger.error("Public Key Hex cannot be empty");
-        return;
-      }
-    }
+  //   if (keyChoice.trim() === "2") {
+  //     adaAddress = await rli.question("ADA Address: ");
+  //     if (!adaAddress.trim()) {
+  //       logger.error("ADA Address cannot be empty");
+  //       return;
+  //     }
+  //   } else {
+  //     publicKeyHex = await rli.question("Public Key Hex (with 0x prefix): ");
+  //     if (!publicKeyHex.trim()) {
+  //       logger.error("Public Key Hex cannot be empty");
+  //       return;
+  //     }
+  //   }
     
-    const controller = await rli.question(`Controller (press Enter for self-controlled): `) || didId;
+  //   const controller = await rli.question(`Controller (press Enter for self-controlled): `) || didId;
     
-    logger.info("Setting up key allowed usages...");
-    const authentication = (await rli.question("Allow Authentication? (y/n): ")).toLowerCase() === "y";
-    const assertionMethod = (await rli.question("Allow Assertion Method? (y/n): ")).toLowerCase() === "y";
-    const keyAgreement = (await rli.question("Allow Key Agreement? (y/n): ")).toLowerCase() === "y";
-    const capabilityInvocation = (await rli.question("Allow Capability Invocation? (y/n): ")).toLowerCase() === "y";
-    const capabilityDelegation = (await rli.question("Allow Capability Delegation? (y/n): ")).toLowerCase() === "y";
+  //   logger.info("Setting up key allowed usages...");
+  //   const authentication = (await rli.question("Allow Authentication? (y/n): ")).toLowerCase() === "y";
+  //   const assertionMethod = (await rli.question("Allow Assertion Method? (y/n): ")).toLowerCase() === "y";
+  //   const keyAgreement = (await rli.question("Allow Key Agreement? (y/n): ")).toLowerCase() === "y";
+  //   const capabilityInvocation = (await rli.question("Allow Capability Invocation? (y/n): ")).toLowerCase() === "y";
+  //   const capabilityDelegation = (await rli.question("Allow Capability Delegation? (y/n): ")).toLowerCase() === "y";
     
-    const confirm = await rli.question(`\nAdd key '${keyId.trim()}' to DID? (y/n): `);
-    if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
-      logger.info("Operation cancelled.");
-      return;
-    }
+  //   const confirm = await rli.question(`\nAdd key '${keyId.trim()}' to DID? (y/n): `);
+  //   if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
+  //     logger.info("Operation cancelled.");
+  //     return;
+  //   }
     
-    logger.info("Adding verification key...");
-    await api.addVerificationKey(contract, didId, {
-      id: keyId.trim(),
-      type: keyType,
-      controller: controller,
-      publicKeyHex: publicKeyHex || undefined,
-      AdaAddress: adaAddress || undefined,
-    }, {
-      authentication,
-      assertionMethod,
-      keyAgreement,
-      capabilityInvocation,
-      capabilityDelegation,
-    });
+  //   logger.info("Adding verification key...");
+  //   await api.addVerificationKey(contract, didId, {
+  //     id: keyId.trim(),
+  //     type: keyType,
+  //     controller: controller,
+  //     publicKeyHex: publicKeyHex || undefined,
+  //     AdaAddress: adaAddress || undefined,
+  //   }, {
+  //     authentication,
+  //     assertionMethod,
+  //     keyAgreement,
+  //     capabilityInvocation,
+  //     capabilityDelegation,
+  //   });
     
-    logger.info("Verification key added successfully!");
-  } catch (error) {
-    logger.error(`Failed to add verification key: ${error}`);
-  }
+  //   logger.info("Verification key added successfully!");
+  // } catch (error) {
+  //   logger.error(`Failed to add verification key: ${error}`);
+  // }
 };
 
 const handleRemoveVerificationKey = async (
@@ -784,41 +784,41 @@ const handleRemoveVerificationKey = async (
   rli: Interface,
   didId: string
 ): Promise<void> => {
-  try {
-    logger.info("\n--- Remove Verification Key ---");
+  // try {
+  //   logger.info("\n--- Remove Verification Key ---");
     
-    const contractAddress = contract.deployTxData.public.contractAddress;
-    const didData = await api.getDid(providers, contractAddress, didId);
+  //   const contractAddress = contract.deployTxData.public.contractAddress;
+  //   const didData = await api.getDid(providers, contractAddress, didId);
     
-    if (!didData || didData.verificationMethods.length === 0) {
-      logger.info("No verification methods found for this DID.");
-      return;
-    }
+  //   if (!didData || didData.verificationMethods.length === 0) {
+  //     logger.info("No verification methods found for this DID.");
+  //     return;
+  //   }
     
-    logger.info("Current verification methods:");
-    didData.verificationMethods.forEach((vm: any, index: number) => {
-      logger.info(`  ${index + 1}. ${vm.id} (${vm.type})`);
-    });
+  //   logger.info("Current verification methods:");
+  //   didData.verificationMethods.forEach((vm: any, index: number) => {
+  //     logger.info(`  ${index + 1}. ${vm.id} (${vm.type})`);
+  //   });
     
-    const keyId = await rli.question("Enter the Key ID to remove: ");
-    if (!keyId.trim()) {
-      logger.error("Key ID cannot be empty");
-      return;
-    }
+  //   const keyId = await rli.question("Enter the Key ID to remove: ");
+  //   if (!keyId.trim()) {
+  //     logger.error("Key ID cannot be empty");
+  //     return;
+  //   }
     
-    const confirm = await rli.question(`\nRemove key '${keyId.trim()}' from DID? (y/n): `);
-    if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
-      logger.info("Operation cancelled.");
-      return;
-    }
+  //   const confirm = await rli.question(`\nRemove key '${keyId.trim()}' from DID? (y/n): `);
+  //   if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
+  //     logger.info("Operation cancelled.");
+  //     return;
+  //   }
     
-    logger.info("Removing verification key...");
-    await api.removeVerificationKey(contract, didId, keyId.trim());
+  //   logger.info("Removing verification key...");
+  //   await api.removeVerificationKey(contract, didId, keyId.trim());
     
-    logger.info("Verification key removed successfully!");
-  } catch (error) {
-    logger.error(`Failed to remove verification key: ${error}`);
-  }
+  //   logger.info("Verification key removed successfully!");
+  // } catch (error) {
+  //   logger.error(`Failed to remove verification key: ${error}`);
+  // }
 };
 
 const handleAddKeyAllowedUsage = async (
@@ -827,59 +827,59 @@ const handleAddKeyAllowedUsage = async (
   rli: Interface,
   didId: string
 ): Promise<void> => {
-  try {
-    logger.info("\n--- Add Key Allowed Usage ---");
+//   try {
+//     logger.info("\n--- Add Key Allowed Usage ---");
     
-    const keyId = await rli.question("Enter Key ID: ");
-    if (!keyId.trim()) {
-      logger.error("Key ID cannot be empty");
-      return;
-    }
+//     const keyId = await rli.question("Enter Key ID: ");
+//     if (!keyId.trim()) {
+//       logger.error("Key ID cannot be empty");
+//       return;
+//     }
     
-    const usageChoice = await rli.question(`
-Select usage to add:
-  1. Authentication
-  2. Assertion Method
-  3. Key Agreement
-  4. Capability Invocation
-  5. Capability Delegation
-Choose option: `);
+//     const usageChoice = await rli.question(`
+// Select usage to add:
+//   1. Authentication
+//   2. Assertion Method
+//   3. Key Agreement
+//   4. Capability Invocation
+//   5. Capability Delegation
+// Choose option: `);
     
-    let actionType: string;
-    switch (usageChoice) {
-      case "1":
-        actionType = "Authentication";
-        break;
-      case "2":
-        actionType = "AssertionMethod";
-        break;
-      case "3":
-        actionType = "KeyAgreement";
-        break;
-      case "4":
-        actionType = "CapabilityInvocation";
-        break;
-      case "5":
-        actionType = "CapabilityDelegation";
-        break;
-      default:
-        logger.error("Invalid choice");
-        return;
-    }
+//     let actionType: string;
+//     switch (usageChoice) {
+//       case "1":
+//         actionType = "Authentication";
+//         break;
+//       case "2":
+//         actionType = "AssertionMethod";
+//         break;
+//       case "3":
+//         actionType = "KeyAgreement";
+//         break;
+//       case "4":
+//         actionType = "CapabilityInvocation";
+//         break;
+//       case "5":
+//         actionType = "CapabilityDelegation";
+//         break;
+//       default:
+//         logger.error("Invalid choice");
+//         return;
+//     }
     
-    const confirm = await rli.question(`\nAdd '${actionType}' usage to key '${keyId.trim()}'? (y/n): `);
-    if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
-      logger.info("Operation cancelled.");
-      return;
-    }
+//     const confirm = await rli.question(`\nAdd '${actionType}' usage to key '${keyId.trim()}'? (y/n): `);
+//     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
+//       logger.info("Operation cancelled.");
+//       return;
+//     }
     
-    logger.info("Adding key allowed usage...");
-    await api.addKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
+//     logger.info("Adding key allowed usage...");
+//     await api.addKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
     
-    logger.info("Key allowed usage added successfully!");
-  } catch (error) {
-    logger.error(`Failed to add key allowed usage: ${error}`);
-  }
+//     logger.info("Key allowed usage added successfully!");
+//   } catch (error) {
+//     logger.error(`Failed to add key allowed usage: ${error}`);
+//   }
 };
 
 const handleRemoveKeyAllowedUsage = async (
@@ -888,59 +888,59 @@ const handleRemoveKeyAllowedUsage = async (
   rli: Interface,
   didId: string
 ): Promise<void> => {
-  try {
-    logger.info("\n--- Remove Key Allowed Usage ---");
+//   try {
+//     logger.info("\n--- Remove Key Allowed Usage ---");
     
-    const keyId = await rli.question("Enter Key ID: ");
-    if (!keyId.trim()) {
-      logger.error("Key ID cannot be empty");
-      return;
-    }
+//     const keyId = await rli.question("Enter Key ID: ");
+//     if (!keyId.trim()) {
+//       logger.error("Key ID cannot be empty");
+//       return;
+//     }
     
-    const usageChoice = await rli.question(`
-Select usage to remove:
-  1. Authentication
-  2. Assertion Method
-  3. Key Agreement
-  4. Capability Invocation
-  5. Capability Delegation
-Choose option: `);
+//     const usageChoice = await rli.question(`
+// Select usage to remove:
+//   1. Authentication
+//   2. Assertion Method
+//   3. Key Agreement
+//   4. Capability Invocation
+//   5. Capability Delegation
+// Choose option: `);
     
-    let actionType: string;
-    switch (usageChoice) {
-      case "1":
-        actionType = "Authentication";
-        break;
-      case "2":
-        actionType = "AssertionMethod";
-        break;
-      case "3":
-        actionType = "KeyAgreement";
-        break;
-      case "4":
-        actionType = "CapabilityInvocation";
-        break;
-      case "5":
-        actionType = "CapabilityDelegation";
-        break;
-      default:
-        logger.error("Invalid choice");
-        return;
-    }
+//     let actionType: string;
+//     switch (usageChoice) {
+//       case "1":
+//         actionType = "Authentication";
+//         break;
+//       case "2":
+//         actionType = "AssertionMethod";
+//         break;
+//       case "3":
+//         actionType = "KeyAgreement";
+//         break;
+//       case "4":
+//         actionType = "CapabilityInvocation";
+//         break;
+//       case "5":
+//         actionType = "CapabilityDelegation";
+//         break;
+//       default:
+//         logger.error("Invalid choice");
+//         return;
+//     }
     
-    const confirm = await rli.question(`\nRemove '${actionType}' usage from key '${keyId.trim()}'? (y/n): `);
-    if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
-      logger.info("Operation cancelled.");
-      return;
-    }
+//     const confirm = await rli.question(`\nRemove '${actionType}' usage from key '${keyId.trim()}'? (y/n): `);
+//     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
+//       logger.info("Operation cancelled.");
+//       return;
+//     }
     
-    logger.info("Removing key allowed usage...");
-    await api.removeKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
+//     logger.info("Removing key allowed usage...");
+//     await api.removeKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
     
-    logger.info("Key allowed usage removed successfully!");
-  } catch (error) {
-    logger.error(`Failed to remove key allowed usage: ${error}`);
-  }
+//     logger.info("Key allowed usage removed successfully!");
+//   } catch (error) {
+//     logger.error(`Failed to remove key allowed usage: ${error}`);
+//   }
 };
 
 const handleDeactivateDid = async (
@@ -948,27 +948,27 @@ const handleDeactivateDid = async (
   rli: Interface,
   didId: string
 ): Promise<void> => {
-  try {
-    logger.info("\n--- Deactivate DID ---");
-    logger.warn("WARNING: This action will permanently deactivate the DID. This cannot be undone.");
+  // try {
+  //   logger.info("\n--- Deactivate DID ---");
+  //   logger.warn("WARNING: This action will permanently deactivate the DID. This cannot be undone.");
     
-    const confirm1 = await rli.question(`\nAre you sure you want to deactivate ${didId}? (yes/no): `);
-    if (confirm1.toLowerCase() !== "yes") {
-      logger.info("Operation cancelled.");
-      return;
-    }
+  //   const confirm1 = await rli.question(`\nAre you sure you want to deactivate ${didId}? (yes/no): `);
+  //   if (confirm1.toLowerCase() !== "yes") {
+  //     logger.info("Operation cancelled.");
+  //     return;
+  //   }
     
-    const confirm2 = await rli.question("Type 'DEACTIVATE' to confirm: ");
-    if (confirm2 !== "DEACTIVATE") {
-      logger.info("Operation cancelled - confirmation text did not match.");
-      return;
-    }
+  //   const confirm2 = await rli.question("Type 'DEACTIVATE' to confirm: ");
+  //   if (confirm2 !== "DEACTIVATE") {
+  //     logger.info("Operation cancelled - confirmation text did not match.");
+  //     return;
+  //   }
     
-    logger.info("Deactivating DID...");
-    await api.deactivateDid(contract, didId);
+  //   logger.info("Deactivating DID...");
+  //   await api.deactivateDid(contract, didId);
     
-    logger.info("DID deactivated successfully!");
-  } catch (error) {
-    logger.error(`Failed to deactivate DID: ${error}`);
-  }
+  //   logger.info("DID deactivated successfully!");
+  // } catch (error) {
+  //   logger.error(`Failed to deactivate DID: ${error}`);
+  // }
 };

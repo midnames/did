@@ -74,7 +74,6 @@ export const joinContract = async (
   const localSecretKey = randomBytes(32);
   const initialPrivateState = createDidSecretState(
     localSecretKey,
-    Array.from({ length: 5 }, () => new Uint8Array(32))
   );
 
   const DidContract = await findDeployedContract(providers, {
@@ -635,15 +634,8 @@ export const createDidFromDocument = async (
         );
       }
 
-      // push to multipleLocalSecretKeys until len 5
-      const mlsk = [...multipleLocalSecretKeys];
-      while (mlsk.length < 5) {
-        mlsk.push(new Uint8Array(32));
-      }
-
       const customPrivateState = createDidSecretState(
         customPrivateKey,
-        mlsk
       );
       await providers.privateStateProvider.set(
         DidPrivateStateId,
@@ -672,44 +664,41 @@ export const createDidFromDocument = async (
     const finalContext = context.length > 0 ? context : [];
     const finalAuthorizedAddresses = authorizedPublicAddresses;
 
-    const authVector = toVector5Maybes(
-      finalAuthMethods,
-      createDefaultAuthenticationMethod()
-    );
-    const verificationVector = toVector5Maybes(
-      finalVerificationMethods,
-      createDefaultVerificationMethod()
-    );
-    const serviceVector = toVector5Maybes(
-      finalServices,
-      createDefaultService()
-    );
-    const credentialVector = toVector5Maybes(
-      finalCredentials,
-      createDefaultCredential()
-    );
-    const contextVector = toVector5Maybes(finalContext, createDefaultContext());
-    const addressVector = toVector5Maybes(
-      finalAuthorizedAddresses,
-      new Uint8Array(32)
-    );
+    // const authVector = toVector5Maybes(
+    //   finalAuthMethods,
+    //   createDefaultAuthenticationMethod()
+    // );
+    // const verificationVector = toVector5Maybes(
+    //   finalVerificationMethods,
+    //   createDefaultVerificationMethod()
+    // );
+    // const serviceVector = toVector5Maybes(
+    //   finalServices,
+    //   createDefaultService()
+    // );
+    // const credentialVector = toVector5Maybes(
+    //   finalCredentials,
+    //   createDefaultCredential()
+    // );
+    // const contextVector = toVector5Maybes(finalContext, createDefaultContext());
+    // const addressVector = toVector5Maybes(
+    //   finalAuthorizedAddresses,
+    //   new Uint8Array(32)
+    // );
 
-    const finalizedTxData = await DidContract.callTx.create_did(
-      didIdBytes,
-      authVector,
-      verificationVector,
-      serviceVector,
-      credentialVector,
-      contextVector,
-      addressVector
-    );
+    // const finalizedTxData = await DidContract.callTx.create_did(
+    //   didIdBytes,
+    //   authVector,
+    //   verificationVector,
+    //   serviceVector,
+    //   credentialVector,
+    //   contextVector,
+    //   addressVector
+    // );
 
-    logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-    );
 
     return {
-      txId: finalizedTxData.public.txId,
+      txId: "foo",
       didId: didDocument.id,
     };
   } catch (error) {
@@ -718,224 +707,224 @@ export const createDidFromDocument = async (
   }
 };
 
-export const addVerificationKey = async (
-  DidContract: DeployedDidContract,
-  didId: string,
-  keyData: {
-    id: string;
-    type: string;
-    controller: string;
-    publicKeyHex?: string;
-    AdaAddress?: string;
-  },
-  allowedUsages: {
-    authentication: boolean;
-    assertionMethod: boolean;
-    keyAgreement: boolean;
-    capabilityInvocation: boolean;
-    capabilityDelegation: boolean;
-  }
-): Promise<{ txId: string }> => {
-  try {
-    logger.info(`Adding verification key ${keyData.id} to DID: ${didId}`);
+// export const addVerificationKey = async (
+//   DidContract: DeployedDidContract,
+//   didId: string,
+//   keyData: {
+//     id: string;
+//     type: string;
+//     controller: string;
+//     publicKeyHex?: string;
+//     AdaAddress?: string;
+//   },
+//   allowedUsages: {
+//     authentication: boolean;
+//     assertionMethod: boolean;
+//     keyAgreement: boolean;
+//     capabilityInvocation: boolean;
+//     capabilityDelegation: boolean;
+//   }
+// ): Promise<{ txId: string }> => {
+//   try {
+//     logger.info(`Adding verification key ${keyData.id} to DID: ${didId}`);
 
-    let key: {
-      is_left: boolean;
-      left: { hex: Uint8Array };
-      right: { address: Uint8Array };
-    };
+//     let key: {
+//       is_left: boolean;
+//       left: { hex: Uint8Array };
+//       right: { address: Uint8Array };
+//     };
 
-    if (keyData.publicKeyHex) {
-      key = {
-        is_left: true,
-        left: { hex: parsePublicKeyHex(keyData.publicKeyHex) },
-        right: { address: new Uint8Array(104) },
-      };
-    } else if (keyData.AdaAddress) {
-      key = {
-        is_left: false,
-        left: { hex: new Uint8Array(130) },
-        right: { address: parseAdaAddress(keyData.AdaAddress) },
-      };
-    } else {
-      throw new Error("Either publicKeyHex or AdaAddress must be provided");
-    }
+//     if (keyData.publicKeyHex) {
+//       key = {
+//         is_left: true,
+//         left: { hex: parsePublicKeyHex(keyData.publicKeyHex) },
+//         right: { address: new Uint8Array(104) },
+//       };
+//     } else if (keyData.AdaAddress) {
+//       key = {
+//         is_left: false,
+//         left: { hex: new Uint8Array(130) },
+//         right: { address: parseAdaAddress(keyData.AdaAddress) },
+//       };
+//     } else {
+//       throw new Error("Either publicKeyHex or AdaAddress must be provided");
+//     }
 
-    const publicKey = {
-      id: stringToUint8Array(keyData.id, 64),
-      type: 0, // Ed25519VerificationKey2020
-      publicKey: key,
-      allowedUsages: {
-        authentication: allowedUsages.authentication,
-        assertionMethod: allowedUsages.assertionMethod,
-        keyAgreement: allowedUsages.keyAgreement,
-        capabilityInvocation: allowedUsages.capabilityInvocation,
-        capabilityDelegation: allowedUsages.capabilityDelegation,
-      },
-    };
+//     const publicKey = {
+//       id: stringToUint8Array(keyData.id, 64),
+//       type: 0, // Ed25519VerificationKey2020
+//       publicKey: key,
+//       allowedUsages: {
+//         authentication: allowedUsages.authentication,
+//         assertionMethod: allowedUsages.assertionMethod,
+//         keyAgreement: allowedUsages.keyAgreement,
+//         capabilityInvocation: allowedUsages.capabilityInvocation,
+//         capabilityDelegation: allowedUsages.capabilityDelegation,
+//       },
+//     };
 
-    const finalizedTxData = await DidContract.callTx.addKey(publicKey);
+//     const finalizedTxData = await DidContract.callTx.addKey(publicKey);
 
-    logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-    );
+//     logger.info(
+//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+//     );
 
-    return {
-      txId: finalizedTxData.public.txId,
-    };
-  } catch (error) {
-    logger.error(`Failed to add verification key: ${error}`);
-    throw new Error(`Adding verification key failed: ${error}`);
-  }
-};
+//     return {
+//       txId: finalizedTxData.public.txId,
+//     };
+//   } catch (error) {
+//     logger.error(`Failed to add verification key: ${error}`);
+//     throw new Error(`Adding verification key failed: ${error}`);
+//   }
+// };
 
-export const removeVerificationKey = async (
-  DidContract: DeployedDidContract,
-  didId: string,
-  keyId: string
-): Promise<{ txId: string }> => {
-  try {
-    logger.info(`Removing verification key ${keyId} from DID: ${didId}`);
+// export const removeVerificationKey = async (
+//   DidContract: DeployedDidContract,
+//   didId: string,
+//   keyId: string
+// ): Promise<{ txId: string }> => {
+//   try {
+//     logger.info(`Removing verification key ${keyId} from DID: ${didId}`);
 
-    const keyIdBytes = stringToUint8Array(keyId, 64);
+//     const keyIdBytes = stringToUint8Array(keyId, 64);
 
-    const finalizedTxData = await DidContract.callTx.removeKey(keyIdBytes);
+//     const finalizedTxData = await DidContract.callTx.removeKey(keyIdBytes);
 
-    logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-    );
+//     logger.info(
+//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+//     );
 
-    return {
-      txId: finalizedTxData.public.txId,
-    };
-  } catch (error) {
-    logger.error(`Failed to remove verification key: ${error}`);
-    throw new Error(`Removing verification key failed: ${error}`);
-  }
-};
+//     return {
+//       txId: finalizedTxData.public.txId,
+//     };
+//   } catch (error) {
+//     logger.error(`Failed to remove verification key: ${error}`);
+//     throw new Error(`Removing verification key failed: ${error}`);
+//   }
+// };
 
-export const addKeyAllowedUsage = async (
-  midnamesContract: DeployedDidContract,
-  didId: string,
-  keyId: string,
-  actionType: string
-): Promise<{ txId: string }> => {
-  try {
-    logger.info(
-      `Adding allowed usage ${actionType} to key ${keyId} for DID: ${didId}`
-    );
+// export const addKeyAllowedUsage = async (
+//   midnamesContract: DeployedDidContract,
+//   didId: string,
+//   keyId: string,
+//   actionType: string
+// ): Promise<{ txId: string }> => {
+//   try {
+//     logger.info(
+//       `Adding allowed usage ${actionType} to key ${keyId} for DID: ${didId}`
+//     );
 
-    const keyIdBytes = stringToUint8Array(keyId, 64);
+//     const keyIdBytes = stringToUint8Array(keyId, 64);
 
-    let actionTypeEnum: number;
-    switch (actionType) {
-      case "Authentication":
-        actionTypeEnum = 0;
-        break;
-      case "AssertionMethod":
-        actionTypeEnum = 1;
-        break;
-      case "KeyAgreement":
-        actionTypeEnum = 2;
-        break;
-      case "CapabilityInvocation":
-        actionTypeEnum = 3;
-        break;
-      case "CapabilityDelegation":
-        actionTypeEnum = 4;
-        break;
-      default:
-        throw new Error(`Invalid action type: ${actionType}`);
-    }
+//     let actionTypeEnum: number;
+//     switch (actionType) {
+//       case "Authentication":
+//         actionTypeEnum = 0;
+//         break;
+//       case "AssertionMethod":
+//         actionTypeEnum = 1;
+//         break;
+//       case "KeyAgreement":
+//         actionTypeEnum = 2;
+//         break;
+//       case "CapabilityInvocation":
+//         actionTypeEnum = 3;
+//         break;
+//       case "CapabilityDelegation":
+//         actionTypeEnum = 4;
+//         break;
+//       default:
+//         throw new Error(`Invalid action type: ${actionType}`);
+//     }
 
-    const finalizedTxData = await midnamesContract.callTx.addAllowedUsage(
-      keyIdBytes,
-      actionTypeEnum
-    );
+//     const finalizedTxData = await midnamesContract.callTx.addAllowedUsage(
+//       keyIdBytes,
+//       actionTypeEnum
+//     );
 
-    logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-    );
+//     logger.info(
+//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+//     );
 
-    return {
-      txId: finalizedTxData.public.txId,
-    };
-  } catch (error) {
-    logger.error(`Failed to add key allowed usage: ${error}`);
-    throw new Error(`Adding key allowed usage failed: ${error}`);
-  }
-};
+//     return {
+//       txId: finalizedTxData.public.txId,
+//     };
+//   } catch (error) {
+//     logger.error(`Failed to add key allowed usage: ${error}`);
+//     throw new Error(`Adding key allowed usage failed: ${error}`);
+//   }
+// };
 
-export const removeKeyAllowedUsage = async (
-  midnamesContract: DeployedDidContract,
-  didId: string,
-  keyId: string,
-  actionType: string
-): Promise<{ txId: string }> => {
-  try {
-    logger.info(
-      `Removing allowed usage ${actionType} from key ${keyId} for DID: ${didId}`
-    );
+// export const removeKeyAllowedUsage = async (
+//   midnamesContract: DeployedDidContract,
+//   didId: string,
+//   keyId: string,
+//   actionType: string
+// ): Promise<{ txId: string }> => {
+//   try {
+//     logger.info(
+//       `Removing allowed usage ${actionType} from key ${keyId} for DID: ${didId}`
+//     );
 
-    const keyIdBytes = stringToUint8Array(keyId, 64);
+//     const keyIdBytes = stringToUint8Array(keyId, 64);
 
-    let actionTypeEnum: number;
-    switch (actionType) {
-      case "Authentication":
-        actionTypeEnum = 0;
-        break;
-      case "AssertionMethod":
-        actionTypeEnum = 1;
-        break;
-      case "KeyAgreement":
-        actionTypeEnum = 2;
-        break;
-      case "CapabilityInvocation":
-        actionTypeEnum = 3;
-        break;
-      case "CapabilityDelegation":
-        actionTypeEnum = 4;
-        break;
-      default:
-        throw new Error(`Invalid action type: ${actionType}`);
-    }
+//     let actionTypeEnum: number;
+//     switch (actionType) {
+//       case "Authentication":
+//         actionTypeEnum = 0;
+//         break;
+//       case "AssertionMethod":
+//         actionTypeEnum = 1;
+//         break;
+//       case "KeyAgreement":
+//         actionTypeEnum = 2;
+//         break;
+//       case "CapabilityInvocation":
+//         actionTypeEnum = 3;
+//         break;
+//       case "CapabilityDelegation":
+//         actionTypeEnum = 4;
+//         break;
+//       default:
+//         throw new Error(`Invalid action type: ${actionType}`);
+//     }
 
-    const finalizedTxData = await midnamesContract.callTx.removeAllowedUsage(
-      keyIdBytes,
-      actionTypeEnum
-    );
+//     const finalizedTxData = await midnamesContract.callTx.removeAllowedUsage(
+//       keyIdBytes,
+//       actionTypeEnum
+//     );
 
-    logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-    );
+//     logger.info(
+//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+//     );
 
-    return {
-      txId: finalizedTxData.public.txId,
-    };
-  } catch (error) {
-    logger.error(`Failed to remove key allowed usage: ${error}`);
-    throw new Error(`Removing key allowed usage failed: ${error}`);
-  }
-};
+//     return {
+//       txId: finalizedTxData.public.txId,
+//     };
+//   } catch (error) {
+//     logger.error(`Failed to remove key allowed usage: ${error}`);
+//     throw new Error(`Removing key allowed usage failed: ${error}`);
+//   }
+// };
 
-export const deactivateDid = async (
-  didContract: DeployedDidContract,
-  didId: string
-): Promise<{ txId: string }> => {
-  try {
-    logger.info(`Deactivating DID: ${didId}`);
+// export const deactivateDid = async (
+//   didContract: DeployedDidContract,
+//   didId: string
+// ): Promise<{ txId: string }> => {
+//   try {
+//     logger.info(`Deactivating DID: ${didId}`);
 
-    const finalizedTxData = await didContract.callTx.deactivate();
+//     const finalizedTxData = await didContract.callTx.deactivate();
 
-    logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-    );
+//     logger.info(
+//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+//     );
 
-    return {
-      txId: finalizedTxData.public.txId,
-    };
-  } catch (error) {
-    logger.error(`Failed to deactivate DID: ${error}`);
-    throw new Error(`DID deactivation failed: ${error}`);
-  }
-};
+//     return {
+//       txId: finalizedTxData.public.txId,
+//     };
+//   } catch (error) {
+//     logger.error(`Failed to deactivate DID: ${error}`);
+//     throw new Error(`DID deactivation failed: ${error}`);
+//   }
+// };
