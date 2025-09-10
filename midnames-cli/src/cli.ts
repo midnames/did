@@ -29,9 +29,9 @@ const GENESIS_MINT_WALLET_SEED =
 
 const CREATE_UPDATE_OR_VIEW = `
 You can do one of the following:
-  1. Create Did DID contract
-  2. Update existing Did DID contract
-  3. View existing Did DID contract
+  1. Create DID contract
+  2. Update existing DID contract
+  3. View existing DID contract
   4. Exit
 Which would you like to do? `;
 
@@ -100,7 +100,7 @@ const buildWalletFromSeed = async (
 async function createDidContract(
   providers: DidProviders
 ): Promise<DeployedDidContract> {
-  logger.info("Deploying new Did DID contract...");
+  logger.info("Deploying new DID contract...");
 
   const localSecretKey = api.randomBytes(32);
   const privateState = createDidSecretState(localSecretKey);
@@ -186,7 +186,7 @@ async function mainLoop(
     const choice = await rli.question(CREATE_UPDATE_OR_VIEW);
     switch (choice) {
       case "1":
-        const new_did_contract_address = await createDidContract(providers);
+        return await createDidContract(providers);
         // await handleCreateDidInteractive(providers, new_did_contract_address, rli);
       case "2":
         return await updateDidContract(providers, rli);

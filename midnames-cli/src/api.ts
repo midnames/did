@@ -95,8 +95,6 @@ export const deploy = async (
   providers: DidProviders,
   privateState: DidPrivateState
 ): Promise<DeployedDidContract> => {
-  logger.info("Deploying midnames contract...");
-
   // default context for contract initialization
   const defaultContext = { uri: "https://www.w3.org/ns/did/v1" };
 
