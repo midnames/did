@@ -2,7 +2,6 @@ pragma language_version 0.16;
 
 import CompactStandardLibrary;
 
-export ledger id: Opaque<"string">;
 export sealed ledger controllerPublicKey: Bytes<32>;
 export ledger active: Boolean;
 export ledger keyRing: Map<Opaque<"string">, PublicKey>;
@@ -56,8 +55,8 @@ struct AllowedUsages {
 witness localSecretKey(): Bytes<32>;
 
 constructor() {
-    active = true;
     controllerPublicKey = disclose(publicKey(localSecretKey()));
+    active = true;
 }
 
 pure circuit publicKey(sk: Bytes<32>): Bytes<32> {
