@@ -36,20 +36,15 @@
       },
     },
     "contract": {
-      "name": "@midnames/core",
+      "name": "@midnight-ntwrk/midnight-did-contract",
       "version": "0.1.0",
-      "dependencies": {
-        "@midnames/utils": "*",
-        "@types/uuid": "^10.0.0",
-        "uuid": "^11.1.0",
-      },
     },
     "midnames-cli": {
       "name": "@midnames/cli",
       "version": "0.1.0",
       "dependencies": {
-        "@midnames/core": "*",
         "@midnames/utils": "*",
+        "@midnight-ntwrk/midnight-did-contract": "*",
         "@midnight-ntwrk/midnight-js-network-id": "2.0.1",
         "@midnight-ntwrk/midnight-js-utils": "2.0.1",
         "rxjs": "^7.8.1",
@@ -192,13 +187,13 @@
 
     "@midnames/cli": ["@midnames/cli@workspace:midnames-cli"],
 
-    "@midnames/core": ["@midnames/core@workspace:contract"],
-
     "@midnames/utils": ["@midnames/utils@workspace:utils"],
 
     "@midnight-ntwrk/compact-runtime": ["@midnight-ntwrk/compact-runtime@0.8.1", "", { "dependencies": { "@midnight-ntwrk/onchain-runtime": "^0.3.0", "@types/object-inspect": "^1.8.1", "object-inspect": "^1.12.3" } }, "sha512-ZXG/iprEqTCxQC/P1oETGOR5CnsoemPsfb17eSANPRsm+11AcIOP0Tp8KJipN+GbycgxOA+fAVwLFqA1hDCgbw=="],
 
     "@midnight-ntwrk/ledger": ["@midnight-ntwrk/ledger@4.0.0", "", {}, "sha512-cnJisY8uQ4NO54miDnjs/ov6n102ZPfKEPxtiDKVEdlKijcc70jz/CI2yBCc0itlwwaqma7FM2Ou5N4pWpbwbg=="],
+
+    "@midnight-ntwrk/midnight-did-contract": ["@midnight-ntwrk/midnight-did-contract@workspace:contract"],
 
     "@midnight-ntwrk/midnight-js-contracts": ["@midnight-ntwrk/midnight-js-contracts@2.0.1", "", { "dependencies": { "@midnight-ntwrk/midnight-js-network-id": "2.0.1", "@midnight-ntwrk/midnight-js-types": "2.0.1", "@midnight-ntwrk/midnight-js-utils": "2.0.1" } }, "sha512-U3T2jKWafU4R7t0jERaFbzkAEtFT8WRFVaILf2GOxAKPwIegkKzzFP+9Kc/1WRkU0d2OnwLvkn0pKU2BVj23vA=="],
 

@@ -13,5 +13,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export * as MatchingPennies from "./managed/matching-pennies/contract/index.cjs";
+export * as Did from "./managed/did/contract/index.cjs";
 export * from "./witnesses";

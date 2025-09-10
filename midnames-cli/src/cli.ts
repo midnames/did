@@ -13,7 +13,7 @@ import {
 } from "./common-types";
 import { type Config, StandaloneConfig } from "./config";
 import * as api from "./api";
-import { createMidnamesSecretState } from "@midnames/core";
+import { createMidnamesSecretState } from "@midnight-ntwrk/midnight-did-contract";
 import { v7 as uuidv7 } from "uuid";
 import * as fs from "node:fs";
 import { type DidJsonDocument } from "./types";

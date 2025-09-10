@@ -3,7 +3,7 @@ import {
   type MidnamesPrivateState,
   witnesses,
   createMidnamesSecretState,
-} from "@midnames/core";
+} from "@midnight-ntwrk/midnight-did-contract";
 import {
   type CoinInfo,
   nativeToken,
