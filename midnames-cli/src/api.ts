@@ -712,7 +712,7 @@ export const addVerificationKey = async (
   publicKeyData: string,
   keyType: "jwk" | "multibase" = "multibase",
   allowedUsages: AllowedUsages
-): Promise<void> => { 
+): Promise<void> => {
   const jwk_key: Keys = {
     is_left: true,
     left: {
@@ -753,30 +753,25 @@ export const addVerificationKey = async (
   }
 };
 
-// export const removeVerificationKey = async (
-//   DidContract: DeployedDidContract,
-//   didId: string,
-//   keyId: string
-// ): Promise<{ txId: string }> => {
-//   try {
-//     logger.info(`Removing verification key ${keyId} from DID: ${didId}`);
+export const removeVerificationKey = async (
+  DidContract: DeployedDidContract,
+  keyId: string
+): Promise<{ txId: string }> => {
+  try {
+    const finalizedTxData = await DidContract.callTx.removeKey(keyId);
 
-//     const keyIdBytes = stringToUint8Array(keyId, 64);
+    logger.info(
+      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+    );
 
-//     const finalizedTxData = await DidContract.callTx.removeKey(keyIdBytes);
-
-//     logger.info(
-//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-//     );
-
-//     return {
-//       txId: finalizedTxData.public.txId,
-//     };
-//   } catch (error) {
-//     logger.error(`Failed to remove verification key: ${error}`);
-//     throw new Error(`Removing verification key failed: ${error}`);
-//   }
-// };
+    return {
+      txId: finalizedTxData.public.txId,
+    };
+  } catch (error) {
+    logger.error(`Failed to remove verification key: ${error}`);
+    throw new Error(`Removing verification key failed: ${error}`);
+  }
+};
 
 // export const addKeyAllowedUsage = async (
 //   midnamesContract: DeployedDidContract,

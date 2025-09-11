@@ -15,7 +15,10 @@ import {
 } from "./common-types";
 import { type Config, StandaloneConfig } from "./config";
 import * as api from "./api";
-import { createDidSecretState } from "@midnight-ntwrk/midnight-did-contract";
+import {
+    Did,
+    createDidSecretState
+} from "@midnight-ntwrk/midnight-did-contract";
 import { v7 as uuidv7 } from "uuid";
 import * as fs from "node:fs";
 import { type DidJsonDocument } from "./types";
@@ -140,12 +143,7 @@ async function updateDidContract(
         await handleAddVerificationKey(contract, rli);
         break;
       case "3":
-        await handleRemoveVerificationKey(
-          providers,
-          contract,
-          rli,
-          await getDidId(rli)
-        );
+        await handleRemoveVerificationKey(providers, contract, rli);
         break;
       case "4":
         await handleAddKeyAllowedUsage(
@@ -857,37 +855,44 @@ async function handleRemoveVerificationKey(
   providers: DidProviders,
   contract: DeployedDidContract,
   rli: Interface,
-  didId: string
 ): Promise<void> {
-  // try {
-  //   logger.info("\n--- Remove Verification Key ---");
-  //   const contractAddress = contract.deployTxData.public.contractAddress;
-  //   const didData = await api.getDid(providers, contractAddress, didId);
-  //   if (!didData || didData.verificationMethods.length === 0) {
-  //     logger.info("No verification methods found for this DID.");
-  //     return;
-  //   }
-  //   logger.info("Current verification methods:");
-  //   didData.verificationMethods.forEach((vm: any, index: number) => {
-  //     logger.info(`  ${index + 1}. ${vm.id} (${vm.type})`);
-  //   });
-  //   const keyId = await rli.question("Enter the Key ID to remove: ");
-  //   if (!keyId.trim()) {
-  //     logger.error("Key ID cannot be empty");
-  //     return;
-  //   }
-  //   const confirm = await rli.question(`\nRemove key '${keyId.trim()}' from DID? (y/n): `);
-  //   if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
-  //     logger.info("Operation cancelled.");
-  //     return;
-  //   }
-  //   logger.info("Removing verification key...");
-  //   await api.removeVerificationKey(contract, didId, keyId.trim());
-  //   logger.info("Verification key removed successfully!");
-  // } catch (error) {
-  //   logger.error(`Failed to remove verification key: ${error}`);
-  // }
-}
+  try {
+    logger.info("\n--- Remove Verification Key ---");
+
+    const keyId = (await rli.question("Enter the Key ID to remove: ")).trim();
+    if (!keyId) {
+        logger.error("Key ID cannot be empty");
+        return;
+    }
+
+    const contractAddress = contract.deployTxData.public.contractAddress;
+    const state = await providers.publicDataProvider.queryContractState(contractAddress);
+    if (state === null) {
+      logger.error("Could not query contract pubic state")
+      return;
+    }
+
+    const keyRing = Did.ledger(state.data).keyRing;
+
+    if (!keyRing.member(keyId)) {
+      logger.info(`Key not in Key Ring`)
+      return;
+    }
+
+    const confirm = await rli.question(`\nRemove key '${keyId.trim()}' from DID? (y/n): `);
+    if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
+      logger.info("Operation cancelled.");
+      return;
+    }
+
+    logger.info("Removing verification key...");
+    await api.removeVerificationKey(contract, keyId);
+
+    logger.info("Verification key removed successfully!");
+  } catch (error) {
+      logger.error(`Failed to remove verification key: ${error}`);
+  }
+};
 
 async function handleAddKeyAllowedUsage(
   providers: DidProviders,
