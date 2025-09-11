@@ -63,18 +63,17 @@ let logger: Logger;
 // @ts-expect-error: It's needed to enable WebSocket usage through apollo
 globalThis.WebSocket = WebSocket;
 
-export const DidContractInstance: DidContract = new Did.Contract(
-  witnesses
-);
+export const DidContractInstance: DidContract = new Did.Contract(witnesses);
+
+const SECRET_KEY = new Uint8Array(32);
+
 
 export const joinContract = async (
   providers: DidProviders,
   contractAddress: string
 ): Promise<DeployedDidContract> => {
-  const localSecretKey = randomBytes(32);
-  const initialPrivateState = createDidSecretState(
-    localSecretKey,
-  );
+  const localSecretKey = SECRET_KEY;
+  const initialPrivateState = createDidSecretState(localSecretKey);
 
   const DidContract = await findDeployedContract(providers, {
     contractAddress,
@@ -438,9 +437,7 @@ export const configureProviders = async (
   const walletAndMidnightProvider =
     await createWalletAndMidnightProvider(wallet);
   return {
-    privateStateProvider: levelPrivateStateProvider<
-      typeof DidPrivateStateId
-    >({
+    privateStateProvider: levelPrivateStateProvider<typeof DidPrivateStateId>({
       privateStateStoreName: contractConfig.privateStateStoreName,
     }),
     publicDataProvider: indexerPublicDataProvider(
@@ -632,18 +629,15 @@ export const createDidFromDocument = async (
         );
       }
 
-      const customPrivateState = createDidSecretState(
-        customPrivateKey,
-      );
+      const customPrivateState = createDidSecretState(customPrivateKey);
       await providers.privateStateProvider.set(
         DidPrivateStateId,
         customPrivateState
       );
       logger.info("Using custom private key for witness");
     } else if (providers) {
-      const currentPrivateState = await providers.privateStateProvider.get(
-        DidPrivateStateId
-      );
+      const currentPrivateState =
+        await providers.privateStateProvider.get(DidPrivateStateId);
       if (currentPrivateState) {
         logger.info("Using existing private state with deployment keys");
       } else {
@@ -693,7 +687,6 @@ export const createDidFromDocument = async (
     //   contextVector,
     //   addressVector
     // );
-
 
     return {
       txId: "foo",
@@ -905,24 +898,20 @@ export const createDidFromDocument = async (
 //   }
 // };
 
-// export const deactivateDid = async (
-//   didContract: DeployedDidContract,
-//   didId: string
-// ): Promise<{ txId: string }> => {
-//   try {
-//     logger.info(`Deactivating DID: ${didId}`);
+export const deactivateDid = async (
+  didContract: DeployedDidContract,
+  didId: string
+): Promise<{ txId: string }> => {
+  try {
+    logger.info(`Deactivating DID: ${didId}`);
 
-//     const finalizedTxData = await didContract.callTx.deactivate();
-
-//     logger.info(
-//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-//     );
-
-//     return {
-//       txId: finalizedTxData.public.txId,
-//     };
-//   } catch (error) {
-//     logger.error(`Failed to deactivate DID: ${error}`);
-//     throw new Error(`DID deactivation failed: ${error}`);
-//   }
-// };
+    const finalizedTxData = await didContract.callTx.deactivate();
+    
+    return {
+      txId: finalizedTxData.public.txId,
+    };
+  } catch (error) {
+    logger.error(`Failed to deactivate DID: ${error}`);
+    throw new Error(`DID deactivation failed: ${error}`);
+  }
+};

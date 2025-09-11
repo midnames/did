@@ -96,13 +96,15 @@ async function buildWalletFromSeed(
   return await api.buildWalletAndWaitForFunds(config, seed, "");
 };
 
+// REMINDER: REMEMBER TO USE WALLET LOCAL SECRET KEY FROM WALLET TO PRESERVE PERSISTENCY
+const SECRET_KEY = new Uint8Array(32);
 
 async function createDidContract(
   providers: DidProviders
 ): Promise<DeployedDidContract> {
   logger.info("Deploying new DID contract...");
 
-  const localSecretKey = api.randomBytes(32);
+  const localSecretKey = SECRET_KEY;
   const privateState = createDidSecretState(localSecretKey);
   const contract = await api.deploy(providers, privateState);
 
@@ -948,27 +950,26 @@ async function handleDeactivateDid(
   rli: Interface,
   didId: string
 ): Promise<void> {
-  // try {
-  //   logger.info("\n--- Deactivate DID ---");
-  //   logger.warn("WARNING: This action will permanently deactivate the DID. This cannot be undone.");
+  try {
+    logger.info("\n--- Deactivate DID ---");
+    logger.warn("WARNING: This action will permanently deactivate the DID. This cannot be undone.");
 
-  //   const confirm1 = await rli.question(`\nAre you sure you want to deactivate ${didId}? (yes/no): `);
-  //   if (confirm1.toLowerCase() !== "yes") {
-  //     logger.info("Operation cancelled.");
-  //     return;
-  //   }
+    const confirm1 = await rli.question(`\nAre you sure you want to deactivate ${didId}? (yes/no): `);
+    if (confirm1.toLowerCase() !== "yes") {
+      logger.info("Operation cancelled.");
+      return;
+    }
 
-  //   const confirm2 = await rli.question("Type 'DEACTIVATE' to confirm: ");
-  //   if (confirm2 !== "DEACTIVATE") {
-  //     logger.info("Operation cancelled - confirmation text did not match.");
-  //     return;
-  //   }
+    const confirm2 = await rli.question("Type 'DEACTIVATE' to confirm: ");
+    if (confirm2 !== "DEACTIVATE") {
+      logger.info("Operation cancelled - confirmation text did not match.");
+      return;
+    }
+    
+    await api.deactivateDid(contract, didId);
 
-  //   logger.info("Deactivating DID...");
-  //   await api.deactivateDid(contract, didId);
-
-  //   logger.info("DID deactivated successfully!");
-  // } catch (error) {
-  //   logger.error(`Failed to deactivate DID: ${error}`);
-  // }
+    logger.info("DID deactivated successfully!");
+  } catch (error) {
+    logger.error(`Failed to deactivate DID. ${error}`);
+  }
 };
