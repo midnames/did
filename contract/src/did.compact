@@ -5,7 +5,7 @@ import CompactStandardLibrary;
 export sealed ledger controllerPublicKey: Bytes<32>;
 export ledger active: Boolean;
 export ledger keyRing: Map<Opaque<"string">, PublicKey>;
-
+export {Maybe, Either};
 export enum VerificationMethodType {
     Ed25519VerificationKey2020,
     JubJubVerificationKey2025,

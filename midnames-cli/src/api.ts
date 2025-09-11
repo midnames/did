@@ -37,6 +37,9 @@ import {
   DidPrivateStateId,
   type DidProviders,
   type DeployedDidContract,
+  PublicKey,
+  Keys,
+  AllowedUsages,
 } from "./common-types";
 import { type Config, contractConfig } from "./config";
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
@@ -66,7 +69,6 @@ globalThis.WebSocket = WebSocket;
 export const DidContractInstance: DidContract = new Did.Contract(witnesses);
 
 const SECRET_KEY = new Uint8Array(32);
-
 
 export const joinContract = async (
   providers: DidProviders,
@@ -704,76 +706,52 @@ export const createDidFromDocument = async (
   }
 };
 
-// export const addVerificationKey = async (
-//   DidContract: DeployedDidContract,
-//   didId: string,
-//   keyData: {
-//     id: string;
-//     type: string;
-//     controller: string;
-//     publicKeyHex?: string;
-//     AdaAddress?: string;
-//   },
-//   allowedUsages: {
-//     authentication: boolean;
-//     assertionMethod: boolean;
-//     keyAgreement: boolean;
-//     capabilityInvocation: boolean;
-//     capabilityDelegation: boolean;
-//   }
-// ): Promise<{ txId: string }> => {
-//   try {
-//     logger.info(`Adding verification key ${keyData.id} to DID: ${didId}`);
+export const addVerificationKey = async (
+  DidContract: DeployedDidContract,
+  keyId: string,
+  publicKeyData: string,
+  keyType: "jwk" | "multibase" = "multibase",
+  allowedUsages: AllowedUsages
+): Promise<void> => { 
+  const jwk_key: Keys = {
+    is_left: true,
+    left: {
+      kty: Did.KeyType.EC,
+      crv: Did.CurveType.Ed25519,
+      x: 0n,
+    },
+    right: { key: "" },
+  };
+  const multibase_key: Keys = {
+    is_left: false,
+    left: {
+      crv: Did.CurveType.Ed25519,
+      kty: Did.KeyType.EC,
+      x: 0n
+    },
+    right: {
+      key: publicKeyData
+    }
+  }
 
-//     let key: {
-//       is_left: boolean;
-//       left: { hex: Uint8Array };
-//       right: { address: Uint8Array };
-//     };
+  try {
+    const keyData: PublicKey = {
+      id: keyId,
+      type: Did.VerificationMethodType.Ed25519VerificationKey2020,
+      publicKey: keyType === "jwk" ? jwk_key : multibase_key,
+      allowedUsages: allowedUsages
+    };
 
-//     if (keyData.publicKeyHex) {
-//       key = {
-//         is_left: true,
-//         left: { hex: parsePublicKeyHex(keyData.publicKeyHex) },
-//         right: { address: new Uint8Array(104) },
-//       };
-//     } else if (keyData.AdaAddress) {
-//       key = {
-//         is_left: false,
-//         left: { hex: new Uint8Array(130) },
-//         right: { address: parseAdaAddress(keyData.AdaAddress) },
-//       };
-//     } else {
-//       throw new Error("Either publicKeyHex or AdaAddress must be provided");
-//     }
+    const finalizedTxData = await DidContract.callTx.addKey(keyData);
 
-//     const publicKey = {
-//       id: stringToUint8Array(keyData.id, 64),
-//       type: 0, // Ed25519VerificationKey2020
-//       publicKey: key,
-//       allowedUsages: {
-//         authentication: allowedUsages.authentication,
-//         assertionMethod: allowedUsages.assertionMethod,
-//         keyAgreement: allowedUsages.keyAgreement,
-//         capabilityInvocation: allowedUsages.capabilityInvocation,
-//         capabilityDelegation: allowedUsages.capabilityDelegation,
-//       },
-//     };
-
-//     const finalizedTxData = await DidContract.callTx.addKey(publicKey);
-
-//     logger.info(
-//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-//     );
-
-//     return {
-//       txId: finalizedTxData.public.txId,
-//     };
-//   } catch (error) {
-//     logger.error(`Failed to add verification key: ${error}`);
-//     throw new Error(`Adding verification key failed: ${error}`);
-//   }
-// };
+    logger.info(
+      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+    );
+  } catch (error) {
+    logger.error(`Failed to add verification key: ${error}`);
+    throw new Error(`Adding verification key failed: ${error}`);
+  }
+};
 
 // export const removeVerificationKey = async (
 //   DidContract: DeployedDidContract,
@@ -861,7 +839,6 @@ export const createDidFromDocument = async (
 //   try {
 //     logger.info(
 //       `Removing allowed usage ${actionType} from key ${keyId} for DID: ${didId}`
-//     );
 
 //     const keyIdBytes = stringToUint8Array(keyId, 64);
 
@@ -912,7 +889,7 @@ export const deactivateDid = async (
     logger.info(`Deactivating DID: ${didId}`);
 
     const finalizedTxData = await didContract.callTx.deactivate();
-    
+
     return {
       txId: finalizedTxData.public.txId,
     };

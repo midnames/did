@@ -10,6 +10,8 @@ import {
 import {
   type DidProviders,
   type DeployedDidContract,
+  type PublicKey,
+  AllowedUsages,
 } from "./common-types";
 import { type Config, StandaloneConfig } from "./config";
 import * as api from "./api";
@@ -17,9 +19,9 @@ import { createDidSecretState } from "@midnight-ntwrk/midnight-did-contract";
 import { v7 as uuidv7 } from "uuid";
 import * as fs from "node:fs";
 import { type DidJsonDocument } from "./types";
+import { VerificationMethodType } from "@midnight-ntwrk/midnight-did-contract/dist/managed/did/contract/index.cjs";
 
 let logger: Logger;
-
 /**
  * This seed gives access to tokens minted in the genesis block of a local development node - only
  * used in standalone networks to build a wallet with initial funds.
@@ -86,7 +88,7 @@ Which would you like to do? `);
         logger.error(`Invalid choice: ${choice}`);
     }
   }
-};
+}
 
 async function buildWalletFromSeed(
   config: Config,
@@ -94,7 +96,7 @@ async function buildWalletFromSeed(
 ): Promise<Wallet & Resource> {
   const seed = await rli.question("Enter your wallet seed: ");
   return await api.buildWalletAndWaitForFunds(config, seed, "");
-};
+}
 
 // REMINDER: REMEMBER TO USE WALLET LOCAL SECRET KEY FROM WALLET TO PRESERVE PERSISTENCY
 const SECRET_KEY = new Uint8Array(32);
@@ -116,7 +118,7 @@ async function createDidContract(
   logger.info(`Transaction ID: ${contract.deployTxData.public.txId}`);
 
   return contract;
-};
+}
 
 async function updateDidContract(
   providers: DidProviders,
@@ -135,16 +137,31 @@ async function updateDidContract(
         await handleViewDidDetails(providers, contract);
         break;
       case "2":
-        await handleAddVerificationKey(providers, contract, rli, await getDidId(rli));
+        await handleAddVerificationKey(contract, rli);
         break;
       case "3":
-        await handleRemoveVerificationKey(providers, contract, rli, await getDidId(rli));
+        await handleRemoveVerificationKey(
+          providers,
+          contract,
+          rli,
+          await getDidId(rli)
+        );
         break;
       case "4":
-        await handleAddKeyAllowedUsage(providers, contract, rli, await getDidId(rli));
+        await handleAddKeyAllowedUsage(
+          providers,
+          contract,
+          rli,
+          await getDidId(rli)
+        );
         break;
       case "5":
-        await handleRemoveKeyAllowedUsage(providers, contract, rli, await getDidId(rli));
+        await handleRemoveKeyAllowedUsage(
+          providers,
+          contract,
+          rli,
+          await getDidId(rli)
+        );
         break;
       case "6":
         await handleDeactivateDid(contract, rli, await getDidId(rli));
@@ -156,7 +173,7 @@ async function updateDidContract(
         logger.error(`Invalid choice: ${choice}`);
     }
   }
-};
+}
 
 async function viewDidContract(
   providers: DidProviders,
@@ -170,7 +187,7 @@ async function viewDidContract(
   await handleViewContractInfo(providers, contract);
 
   return contract;
-};
+}
 
 async function getDidId(rli: Interface): Promise<string> {
   const didId = await rli.question("Enter the DID ID (e.g., did:midnames:1234abcdef): ");
@@ -178,7 +195,7 @@ async function getDidId(rli: Interface): Promise<string> {
     throw new Error("DID identifier cannot be empty");
   }
   return didId.trim();
-};
+}
 
 async function mainLoop(
   providers: DidProviders,
@@ -189,7 +206,7 @@ async function mainLoop(
     switch (choice) {
       case "1":
         return await createDidContract(providers);
-        // await handleCreateDidInteractive(providers, new_did_contract_address, rli);
+      // await handleCreateDidInteractive(providers, new_did_contract_address, rli);
       case "2":
         return await updateDidContract(providers, rli);
       case "3":
@@ -201,7 +218,7 @@ async function mainLoop(
         logger.error(`Invalid choice: ${choice}`);
     }
   }
-};
+}
 
 const mapContainerPort = (
   env: StartedDockerComposeEnvironment,
@@ -286,7 +303,7 @@ export async function run(
       }
     }
   }
-};
+}
 
 async function handleCreateDidInteractive(
   providers: DidProviders,
@@ -298,7 +315,7 @@ async function handleCreateDidInteractive(
   } catch (error) {
     logger.error(`Failed to create DID: ${error}`);
   }
-};
+}
 
 async function createDidWithManualInput(
   providers: DidProviders,
@@ -497,7 +514,7 @@ async function createDidWithManualInput(
   logger.info(`\n=== DID Creation Result ===`);
   logger.info(`DID ID: ${result.didId}`);
   logger.info(`Transaction ID: ${result.txId}`);
-};
+}
 
 async function handleCreateDidFromFile(
   providers: DidProviders,
@@ -664,8 +681,7 @@ async function handleCreateDidFromFile(
   } catch (error) {
     logger.error(`Failed to create DID from file: ${error}`);
   }
-};
-
+}
 
 async function handleViewContractInfo(
   providers: DidProviders,
@@ -680,7 +696,7 @@ async function handleViewContractInfo(
   } catch (error) {
     logger.error(`Failed to get contract info: ${error}`);
   }
-};
+}
 
 async function handleViewDidDetails(
   providers: DidProviders,
@@ -701,14 +717,74 @@ async function handleViewDidDetails(
   } catch (error) {
     logger.error(`Failed to view DID details: ${error}`);
   }
-};
+}
 
 async function handleAddVerificationKey(
-  providers: DidProviders,
   contract: DeployedDidContract,
-  rli: Interface,
-  didId: string
+  rli: Interface
 ): Promise<void> {
+  try {
+    const keyId = await rli.question(`Key ID (e.g., 'key-1'): `);
+    if (!keyId.trim()) {
+      logger.error("Invalid: Key ID cannot be empty");
+      return;
+    }
+
+    const keyType = (await rli.question(`${keyId} type ('jwk' or 'multibase'): `)) as "jwk" | "multibase";
+    if (!keyType.trim()) {
+      logger.error(`Did not provide a valid Key Type.`);
+      return;
+    }
+
+    if (!(keyType == "jwk" || keyType == "multibase")) {
+      logger.error("Invalid Key Type (must provide JWK or Multibase)");
+      return;
+    }
+
+    const publicKeyData = await rli.question(`Public key data: `);
+    if (!publicKeyData.trim()) {
+      logger.error("Public key data cannot be empty");
+      return;
+    }
+
+    // Collect allowed usages
+    logger.info("Setting up key allowed usages...");
+    const authentication = (await rli.question("Allow Authentication? (y/n): ")).toLowerCase() === "y";
+    const assertionMethod = (await rli.question("Allow Assertion Method? (y/n): ")).toLowerCase() === "y";
+    const keyAgreement = (await rli.question("Allow Key Agreement? (y/n): ")).toLowerCase() ==="y";
+    const capabilityInvocation = (await rli.question("Allow Capability Invocation? (y/n): ")).toLowerCase() === "y";
+    const capabilityDelegation = (await rli.question("Allow Capability Delegation? (y/n): ")).toLowerCase() === "y";
+
+    const allowedUsages: AllowedUsages = {
+      authentication,
+      assertionMethod,
+      keyAgreement,
+      capabilityInvocation,
+      capabilityDelegation,
+    };
+
+    const confirm = await rli.question(
+      `\nAdd key '${keyId.trim()}' with type '${keyType}'? (y/n): `
+    );
+    if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
+      logger.info("Operation cancelled.");
+      return;
+    }
+
+    logger.info("Adding verification key...");
+    await api.addVerificationKey(
+      contract,
+      keyId,
+      publicKeyData,
+      keyType,
+      allowedUsages
+    );
+    logger.info("Verification key added successfully!");
+  } catch (error) {
+    logger.error(`Failed to add verification key. ${error}`);
+    return;
+  }
+
   // try {
   //   logger.info("\n--- Add Verification Key ---");
 
@@ -775,7 +851,7 @@ async function handleAddVerificationKey(
   // } catch (error) {
   //   logger.error(`Failed to add verification key: ${error}`);
   // }
-};
+}
 
 async function handleRemoveVerificationKey(
   providers: DidProviders,
@@ -785,40 +861,33 @@ async function handleRemoveVerificationKey(
 ): Promise<void> {
   // try {
   //   logger.info("\n--- Remove Verification Key ---");
-
   //   const contractAddress = contract.deployTxData.public.contractAddress;
   //   const didData = await api.getDid(providers, contractAddress, didId);
-
   //   if (!didData || didData.verificationMethods.length === 0) {
   //     logger.info("No verification methods found for this DID.");
   //     return;
   //   }
-
   //   logger.info("Current verification methods:");
   //   didData.verificationMethods.forEach((vm: any, index: number) => {
   //     logger.info(`  ${index + 1}. ${vm.id} (${vm.type})`);
   //   });
-
   //   const keyId = await rli.question("Enter the Key ID to remove: ");
   //   if (!keyId.trim()) {
   //     logger.error("Key ID cannot be empty");
   //     return;
   //   }
-
   //   const confirm = await rli.question(`\nRemove key '${keyId.trim()}' from DID? (y/n): `);
   //   if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
   //     logger.info("Operation cancelled.");
   //     return;
   //   }
-
   //   logger.info("Removing verification key...");
   //   await api.removeVerificationKey(contract, didId, keyId.trim());
-
   //   logger.info("Verification key removed successfully!");
   // } catch (error) {
   //   logger.error(`Failed to remove verification key: ${error}`);
   // }
-};
+}
 
 async function handleAddKeyAllowedUsage(
   providers: DidProviders,
@@ -826,60 +895,54 @@ async function handleAddKeyAllowedUsage(
   rli: Interface,
   didId: string
 ): Promise<void> {
-//   try {
-//     logger.info("\n--- Add Key Allowed Usage ---");
-
-//     const keyId = await rli.question("Enter Key ID: ");
-//     if (!keyId.trim()) {
-//       logger.error("Key ID cannot be empty");
-//       return;
-//     }
-
-//     const usageChoice = await rli.question(`
-// Select usage to add:
-//   1. Authentication
-//   2. Assertion Method
-//   3. Key Agreement
-//   4. Capability Invocation
-//   5. Capability Delegation
-// Choose option: `);
-
-//     let actionType: string;
-//     switch (usageChoice) {
-//       case "1":
-//         actionType = "Authentication";
-//         break;
-//       case "2":
-//         actionType = "AssertionMethod";
-//         break;
-//       case "3":
-//         actionType = "KeyAgreement";
-//         break;
-//       case "4":
-//         actionType = "CapabilityInvocation";
-//         break;
-//       case "5":
-//         actionType = "CapabilityDelegation";
-//         break;
-//       default:
-//         logger.error("Invalid choice");
-//         return;
-//     }
-
-//     const confirm = await rli.question(`\nAdd '${actionType}' usage to key '${keyId.trim()}'? (y/n): `);
-//     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
-//       logger.info("Operation cancelled.");
-//       return;
-//     }
-
-//     logger.info("Adding key allowed usage...");
-//     await api.addKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
-
-//     logger.info("Key allowed usage added successfully!");
-//   } catch (error) {
-//     logger.error(`Failed to add key allowed usage: ${error}`);
-//   }
-};
+  //   try {
+  //     logger.info("\n--- Add Key Allowed Usage ---");
+  //     const keyId = await rli.question("Enter Key ID: ");
+  //     if (!keyId.trim()) {
+  //       logger.error("Key ID cannot be empty");
+  //       return;
+  //     }
+  //     const usageChoice = await rli.question(`
+  // Select usage to add:
+  //   1. Authentication
+  //   2. Assertion Method
+  //   3. Key Agreement
+  //   4. Capability Invocation
+  //   5. Capability Delegation
+  // Choose option: `);
+  //     let actionType: string;
+  //     switch (usageChoice) {
+  //       case "1":
+  //         actionType = "Authentication";
+  //         break;
+  //       case "2":
+  //         actionType = "AssertionMethod";
+  //         break;
+  //       case "3":
+  //         actionType = "KeyAgreement";
+  //         break;
+  //       case "4":
+  //         actionType = "CapabilityInvocation";
+  //         break;
+  //       case "5":
+  //         actionType = "CapabilityDelegation";
+  //         break;
+  //       default:
+  //         logger.error("Invalid choice");
+  //         return;
+  //     }
+  //     const confirm = await rli.question(`\nAdd '${actionType}' usage to key '${keyId.trim()}'? (y/n): `);
+  //     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
+  //       logger.info("Operation cancelled.");
+  //       return;
+  //     }
+  //     logger.info("Adding key allowed usage...");
+  //     await api.addKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
+  //     logger.info("Key allowed usage added successfully!");
+  //   } catch (error) {
+  //     logger.error(`Failed to add key allowed usage: ${error}`);
+  //   }
+}
 
 async function handleRemoveKeyAllowedUsage(
   providers: DidProviders,
@@ -887,60 +950,54 @@ async function handleRemoveKeyAllowedUsage(
   rli: Interface,
   didId: string
 ): Promise<void> {
-//   try {
-//     logger.info("\n--- Remove Key Allowed Usage ---");
-
-//     const keyId = await rli.question("Enter Key ID: ");
-//     if (!keyId.trim()) {
-//       logger.error("Key ID cannot be empty");
-//       return;
-//     }
-
-//     const usageChoice = await rli.question(`
-// Select usage to remove:
-//   1. Authentication
-//   2. Assertion Method
-//   3. Key Agreement
-//   4. Capability Invocation
-//   5. Capability Delegation
-// Choose option: `);
-
-//     let actionType: string;
-//     switch (usageChoice) {
-//       case "1":
-//         actionType = "Authentication";
-//         break;
-//       case "2":
-//         actionType = "AssertionMethod";
-//         break;
-//       case "3":
-//         actionType = "KeyAgreement";
-//         break;
-//       case "4":
-//         actionType = "CapabilityInvocation";
-//         break;
-//       case "5":
-//         actionType = "CapabilityDelegation";
-//         break;
-//       default:
-//         logger.error("Invalid choice");
-//         return;
-//     }
-
-//     const confirm = await rli.question(`\nRemove '${actionType}' usage from key '${keyId.trim()}'? (y/n): `);
-//     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
-//       logger.info("Operation cancelled.");
-//       return;
-//     }
-
-//     logger.info("Removing key allowed usage...");
-//     await api.removeKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
-
-//     logger.info("Key allowed usage removed successfully!");
-//   } catch (error) {
-//     logger.error(`Failed to remove key allowed usage: ${error}`);
-//   }
-};
+  //   try {
+  //     logger.info("\n--- Remove Key Allowed Usage ---");
+  //     const keyId = await rli.question("Enter Key ID: ");
+  //     if (!keyId.trim()) {
+  //       logger.error("Key ID cannot be empty");
+  //       return;
+  //     }
+  //     const usageChoice = await rli.question(`
+  // Select usage to remove:
+  //   1. Authentication
+  //   2. Assertion Method
+  //   3. Key Agreement
+  //   4. Capability Invocation
+  //   5. Capability Delegation
+  // Choose option: `);
+  //     let actionType: string;
+  //     switch (usageChoice) {
+  //       case "1":
+  //         actionType = "Authentication";
+  //         break;
+  //       case "2":
+  //         actionType = "AssertionMethod";
+  //         break;
+  //       case "3":
+  //         actionType = "KeyAgreement";
+  //         break;
+  //       case "4":
+  //         actionType = "CapabilityInvocation";
+  //         break;
+  //       case "5":
+  //         actionType = "CapabilityDelegation";
+  //         break;
+  //       default:
+  //         logger.error("Invalid choice");
+  //         return;
+  //     }
+  //     const confirm = await rli.question(`\nRemove '${actionType}' usage from key '${keyId.trim()}'? (y/n): `);
+  //     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
+  //       logger.info("Operation cancelled.");
+  //       return;
+  //     }
+  //     logger.info("Removing key allowed usage...");
+  //     await api.removeKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
+  //     logger.info("Key allowed usage removed successfully!");
+  //   } catch (error) {
+  //     logger.error(`Failed to remove key allowed usage: ${error}`);
+  //   }
+}
 
 async function handleDeactivateDid(
   contract: DeployedDidContract,
@@ -949,9 +1006,13 @@ async function handleDeactivateDid(
 ): Promise<void> {
   try {
     logger.info("\n--- Deactivate DID ---");
-    logger.warn("WARNING: This action will permanently deactivate the DID. This cannot be undone.");
+    logger.warn(
+      "WARNING: This action will permanently deactivate the DID. This cannot be undone."
+    );
 
-    const confirm1 = await rli.question(`\nAre you sure you want to deactivate ${didId}? (yes/no): `);
+    const confirm1 = await rli.question(
+      `\nAre you sure you want to deactivate ${didId}? (yes/no): `
+    );
     if (confirm1.toLowerCase() !== "yes") {
       logger.info("Operation cancelled.");
       return;
@@ -962,11 +1023,11 @@ async function handleDeactivateDid(
       logger.info("Operation cancelled - confirmation text did not match.");
       return;
     }
-    
+
     await api.deactivateDid(contract, didId);
 
     logger.info("DID deactivated successfully!");
   } catch (error) {
     logger.error(`Failed to deactivate DID. ${error}`);
   }
-};
+}
