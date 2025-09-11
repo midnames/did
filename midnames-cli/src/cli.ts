@@ -37,7 +37,7 @@ Which would you like to do? `;
 
 const SELECT_DID_OPERATION = `
 Choose a DID operation:
-  1. View DID details
+  1. View DID document
   2. Add verification key
   3. Remove verification key
   4. Add key allowed usage
@@ -111,7 +111,7 @@ async function createDidContract(
   // Display contract information
   const info = await api.displayContractInfo(providers, contract);
   logger.info("Contract deployed successfully!");
-  logger.info(`Contract Address: ${info.contractAddress}`);
+  logger.info(`Contract Address: ${info?.contractAddress}`);
   logger.info(`Block Height: ${contract.deployTxData.public.blockHeight}`);
   logger.info(`Transaction ID: ${contract.deployTxData.public.txId}`);
 
@@ -132,7 +132,7 @@ async function updateDidContract(
 
     switch (choice) {
       case "1":
-        await handleViewDidDetails(providers, contract, await getDidId(rli));
+        await handleViewDidDetails(providers, contract);
         break;
       case "2":
         await handleAddVerificationKey(providers, contract, rli, await getDidId(rli));
@@ -173,7 +173,7 @@ async function viewDidContract(
 };
 
 async function getDidId(rli: Interface): Promise<string> {
-  const didId = await rli.question("Enter the DID ID (e.g., did:midnight:example): ");
+  const didId = await rli.question("Enter the DID ID (e.g., did:midnames:1234abcdef): ");
   if (!didId.trim()) {
     throw new Error("DID identifier cannot be empty");
   }
@@ -674,9 +674,9 @@ async function handleViewContractInfo(
   try {
     const info = await api.displayContractInfo(providers, contract);
     logger.info(`\n=== Contract Information ===`);
-    logger.info(`Contract Address: ${info.contractAddress}`);
-    logger.info(`Controller Public Key: ${info.publicKey}$`)
-    logger.info(`Active DID: ${info.active}`);
+    logger.info(`Contract Address: ${info?.contractAddress}`);
+    logger.info(`Controller Public Key: ${info?.publicKey}$`)
+    logger.info(`Active DID: ${info?.active}`);
   } catch (error) {
     logger.error(`Failed to get contract info: ${error}`);
   }
@@ -685,22 +685,19 @@ async function handleViewContractInfo(
 async function handleViewDidDetails(
   providers: DidProviders,
   contract: DeployedDidContract,
-  didId: string
 ): Promise<void> {
   try {
     const contractAddress = contract.deployTxData.public.contractAddress;
-    const formattedDidData = await api.getDidFormatted(
-      providers,
-      contractAddress,
-      didId
-    );
 
-    if (formattedDidData) {
-      logger.info(`\n=== DID Details ===`);
-      logger.info(JSON.stringify(formattedDidData, null, 2));
-    } else {
-      logger.info("DID not found or error occurred.");
-    }
+    logger.info(`
+    {
+        "@context": "https://www.w3.org/ns/did/v1.1",
+        "id": "did:mindame:${contractAddress}",
+        "authentication": [],
+        "verificationMethod": [],
+        "service": []
+    }`);
+
   } catch (error) {
     logger.error(`Failed to view DID details: ${error}`);
   }

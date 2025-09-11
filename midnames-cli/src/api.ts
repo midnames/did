@@ -83,7 +83,7 @@ export const joinContract = async (
   });
   logger.info(
     `Joined contract at address: ${DidContract.deployTxData.public.contractAddress}
-Witness: 
+Witness:
 - local_secret_key: ${Buffer.from(localSecretKey).toString("hex")}
     `
   );
@@ -127,12 +127,16 @@ export const displayContractInfo = async (
   contractAddress: string;
   active: boolean;
   publicKey: Uint8Array<ArrayBufferLike> | null;
-}> => {
+} | null > => {
   const contractAddress = DidContract.deployTxData.public.contractAddress;
+  const state = await providers.publicDataProvider.queryContractState(contractAddress);
+  if (state === null) {
+      return null;
+  }
 
-  // contract state to count DIDs
-  const state =
-    await providers.publicDataProvider.queryContractState(contractAddress);
+  const data = state.data;
+
+  logger.info(`data: ${data}`);
 
   const active = state ? Did.ledger(state.data).active : false;
   const pk = state ? Did.ledger(state.data).controllerPublicKey : null;
@@ -140,6 +144,7 @@ export const displayContractInfo = async (
   logger.info(`Contract Address: ${contractAddress}`);
   logger.info(`Controller Public Key: ${pk}`);
   return { contractAddress, active, publicKey: pk };
+
 };
 
 export const getDid = async (
@@ -157,22 +162,23 @@ export const getDid = async (
 
     const ledgerState = Did.ledger(state.data);
 
+    logger.info(`ledgerState: ${JSON.stringify(ledgerState, null, 2)}`);
+
     const didData = {
-      id: ledgerState.id,
       active: ledgerState.active,
       controllerPublicKey: ledgerState.controllerPublicKey,
       keyRing: {} as any,
     };
 
-    // Use the iterator functionality provided by keyRing
-    const keyRingIterator = ledgerState.keyRing[Symbol.iterator]();
-    let iteratorResult = keyRingIterator.next();
-
-    while (!iteratorResult.done) {
-      const [keyId, publicKey] = iteratorResult.value;
-      didData.keyRing[keyId] = publicKey;
-      iteratorResult = keyRingIterator.next();
-    }
+    // // Use the iterator functionality provided by keyRing
+    // const keyRingIterator = ledgerState.keyRing[Symbol.iterator]();
+    // let iteratorResult = keyRingIterator.next();
+    //
+    // while (!iteratorResult.done) {
+    //   const [keyId, publicKey] = iteratorResult.value;
+    //   didData.keyRing[keyId] = publicKey;
+    //   iteratorResult = keyRingIterator.next();
+    // }
 
     return didData;
   } catch (error) {
