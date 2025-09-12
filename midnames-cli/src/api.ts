@@ -774,57 +774,30 @@ export const removeVerificationKey = async (
   }
 };
 
-// export const addKeyAllowedUsage = async (
-//   midnamesContract: DeployedDidContract,
-//   didId: string,
-//   keyId: string,
-//   actionType: string
-// ): Promise<{ txId: string }> => {
-//   try {
-//     logger.info(
-//       `Adding allowed usage ${actionType} to key ${keyId} for DID: ${didId}`
-//     );
+export async function addKeyAllowedUsage(
+  contract: DeployedDidContract,
+  keyId: string,
+  actionType: Did.ActionType
+): Promise<{ txId: string }> {
+  try {
+    logger.info(
+      `Adding allowed usage ${actionType} to key ${keyId} for DID: did:midnames:${contract.deployTxData.public.contractAddress}`
+    );
 
-//     const keyIdBytes = stringToUint8Array(keyId, 64);
+    const finalizedTxData = await contract.callTx.addAllowedUsage(keyId, actionType);
 
-//     let actionTypeEnum: number;
-//     switch (actionType) {
-//       case "Authentication":
-//         actionTypeEnum = 0;
-//         break;
-//       case "AssertionMethod":
-//         actionTypeEnum = 1;
-//         break;
-//       case "KeyAgreement":
-//         actionTypeEnum = 2;
-//         break;
-//       case "CapabilityInvocation":
-//         actionTypeEnum = 3;
-//         break;
-//       case "CapabilityDelegation":
-//         actionTypeEnum = 4;
-//         break;
-//       default:
-//         throw new Error(`Invalid action type: ${actionType}`);
-//     }
+    logger.info(
+      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+    );
 
-//     const finalizedTxData = await midnamesContract.callTx.addAllowedUsage(
-//       keyIdBytes,
-//       actionTypeEnum
-//     );
-
-//     logger.info(
-//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-//     );
-
-//     return {
-//       txId: finalizedTxData.public.txId,
-//     };
-//   } catch (error) {
-//     logger.error(`Failed to add key allowed usage: ${error}`);
-//     throw new Error(`Adding key allowed usage failed: ${error}`);
-//   }
-// };
+    return {
+      txId: finalizedTxData.public.txId,
+    };
+  } catch (error) {
+    logger.error(`Failed to add key allowed usage: ${error}`);
+    throw new Error(`Adding key allowed usage failed: ${error}`);
+  }
+};
 
 // export const removeKeyAllowedUsage = async (
 //   midnamesContract: DeployedDidContract,
