@@ -149,12 +149,7 @@ async function updateDidContract(
         await handleAddKeyAllowedUsage(providers, contract, rli);
         break;
       case "5":
-        await handleRemoveKeyAllowedUsage(
-          providers,
-          contract,
-          rli,
-          await getDidId(rli)
-        );
+        await handleRemoveKeyAllowedUsage(providers, contract, rli);
         break;
       case "6":
         await handleDeactivateDid(contract, rli, await getDidId(rli));
@@ -882,7 +877,7 @@ async function handleRemoveVerificationKey(
 };
 
 const ALLOWED_USAGE_QUESTION = `
-Select usage to add:
+Which one?
   1. Authentication
   2. Assertion Method
   3. Key Agreement
@@ -939,56 +934,47 @@ async function handleAddKeyAllowedUsage(
 async function handleRemoveKeyAllowedUsage(
   providers: DidProviders,
   contract: DeployedDidContract,
-  rli: Interface,
-  didId: string
+  rli: Interface
 ): Promise<void> {
-  //   try {
-  //     logger.info("\n--- Remove Key Allowed Usage ---");
-  //     const keyId = await rli.question("Enter Key ID: ");
-  //     if (!keyId.trim()) {
-  //       logger.error("Key ID cannot be empty");
-  //       return;
-  //     }
-  //     const usageChoice = await rli.question(`
-  // Select usage to remove:
-  //   1. Authentication
-  //   2. Assertion Method
-  //   3. Key Agreement
-  //   4. Capability Invocation
-  //   5. Capability Delegation
-  // Choose option: `);
-  //     let actionType: string;
-  //     switch (usageChoice) {
-  //       case "1":
-  //         actionType = "Authentication";
-  //         break;
-  //       case "2":
-  //         actionType = "AssertionMethod";
-  //         break;
-  //       case "3":
-  //         actionType = "KeyAgreement";
-  //         break;
-  //       case "4":
-  //         actionType = "CapabilityInvocation";
-  //         break;
-  //       case "5":
-  //         actionType = "CapabilityDelegation";
-  //         break;
-  //       default:
-  //         logger.error("Invalid choice");
-  //         return;
-  //     }
-  //     const confirm = await rli.question(`\nRemove '${actionType}' usage from key '${keyId.trim()}'? (y/n): `);
-  //     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
-  //       logger.info("Operation cancelled.");
-  //       return;
-  //     }
-  //     logger.info("Removing key allowed usage...");
-  //     await api.removeKeyAllowedUsage(contract, didId, keyId.trim(), actionType);
-  //     logger.info("Key allowed usage removed successfully!");
-  //   } catch (error) {
-  //     logger.error(`Failed to remove key allowed usage: ${error}`);
-  //   }
+  try {
+    logger.info("\n--- Remove Key Allowed Usage ---");
+
+    const keyId = (await rli.question("Enter Key ID: ")).trim();
+    if (!keyId) {
+      logger.error("Key ID cannot be empty");
+      return;
+    }
+
+    let usageChoice = parseInt(await rli.question(ALLOWED_USAGE_QUESTION), 10);
+
+    if (isNaN(usageChoice) || usageChoice < 1 || usageChoice > 5) {
+      logger.error("Invalid choice");
+      return;
+    }
+
+    usageChoice -= 1;
+
+    const actionType: Did.ActionType = usageChoice;
+    const actionTypeName = Did.ActionType[usageChoice];
+
+    logger.info("Selected action:", actionTypeName);
+
+    const confirm = (await rli.question(
+      `\nRemove '${actionTypeName}' usage to key '${keyId}'? (y/n): `
+    )).toLowerCase();
+
+    if (confirm !== "y" && confirm !== "yes") {
+      logger.info("Operation cancelled.");
+      return;
+    }
+
+    logger.info("Removing key allowed usage...");
+    await api.removeKeyAllowedUsage(contract, keyId, actionType);
+
+    logger.info("Key allowed usage removed successfully!");
+  } catch (error) {
+    logger.error(`Failed to remove key allowed usage: ${error}`);
+  }
 }
 
 async function handleDeactivateDid(

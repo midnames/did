@@ -781,10 +781,35 @@ export async function addKeyAllowedUsage(
 ): Promise<{ txId: string }> {
   try {
     logger.info(
-      `Adding allowed usage ${actionType} to key ${keyId} for DID: did:midnames:${contract.deployTxData.public.contractAddress}`
+      `Adding allowed usage ${Did.ActionType[actionType]} to key ${keyId} for DID: did:midnames:${contract.deployTxData.public.contractAddress}`
     );
 
     const finalizedTxData = await contract.callTx.addAllowedUsage(keyId, actionType);
+
+    logger.info(
+      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
+    );
+
+    return {
+      txId: finalizedTxData.public.txId,
+    };
+  } catch (error) {
+    logger.error(`Failed to add key allowed usage: ${error}`);
+    throw new Error(`Adding key allowed usage failed: ${error}`);
+  }
+};
+
+export async function removeKeyAllowedUsage(
+  contract: DeployedDidContract,
+  keyId: string,
+  actionType: Did.ActionType
+): Promise<{ txId: string }> {
+  try {
+    logger.info(
+      `Removing allowed usage ${Did.ActionType[actionType]} to key ${keyId} for DID: did:midnames:${contract.deployTxData.public.contractAddress}`
+    );
+
+    const finalizedTxData = await contract.callTx.removeAllowedUsage(keyId, actionType);
 
     logger.info(
       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
