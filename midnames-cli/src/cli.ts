@@ -702,15 +702,7 @@ async function handleViewDidDetails(
 ): Promise<void> {
   try {
     const contractAddress = contract.deployTxData.public.contractAddress;
-
-    logger.info(`
-    {
-        "@context": "https://www.w3.org/ns/did/v1.1",
-        "id": "did:mindame:${contractAddress}",
-        "authentication": [],
-        "verificationMethod": [],
-        "service": []
-    }`);
+    await api.viewDidDetails(contractAddress, providers)
 
   } catch (error) {
     logger.error(`Failed to view DID details: ${error}`);

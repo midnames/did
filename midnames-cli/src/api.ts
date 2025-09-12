@@ -40,6 +40,7 @@ import {
   PublicKey,
   Keys,
   AllowedUsages,
+  VerificationMethodType
 } from "./common-types";
 import { type Config, contractConfig } from "./config";
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
@@ -129,11 +130,12 @@ export const displayContractInfo = async (
   contractAddress: string;
   active: boolean;
   publicKey: Uint8Array<ArrayBufferLike> | null;
-} | null > => {
+} | null> => {
   const contractAddress = DidContract.deployTxData.public.contractAddress;
-  const state = await providers.publicDataProvider.queryContractState(contractAddress);
+  const state =
+    await providers.publicDataProvider.queryContractState(contractAddress);
   if (state === null) {
-      return null;
+    return null;
   }
 
   const data = state.data;
@@ -146,7 +148,6 @@ export const displayContractInfo = async (
   logger.info(`Contract Address: ${contractAddress}`);
   logger.info(`Controller Public Key: ${pk}`);
   return { contractAddress, active, publicKey: pk };
-
 };
 
 export const getDid = async (
@@ -727,19 +728,19 @@ export const addVerificationKey = async (
     left: {
       crv: Did.CurveType.Ed25519,
       kty: Did.KeyType.EC,
-      x: 0n
+      x: 0n,
     },
     right: {
-      key: publicKeyData
-    }
-  }
+      key: publicKeyData,
+    },
+  };
 
   try {
     const keyData: PublicKey = {
       id: keyId,
       type: Did.VerificationMethodType.Ed25519VerificationKey2020,
       publicKey: keyType === "jwk" ? jwk_key : multibase_key,
-      allowedUsages: allowedUsages
+      allowedUsages: allowedUsages,
     };
 
     const finalizedTxData = await DidContract.callTx.addKey(keyData);
@@ -875,6 +876,79 @@ export const removeVerificationKey = async (
 //     throw new Error(`Removing key allowed usage failed: ${error}`);
 //   }
 // };
+
+function parseDid(contractAddress: string, v: PublicKey) {
+  const DID = {
+    id: v.id,
+    type: `${Did.VerificationMethodType[v.type]}`,
+    controller: `did:midnight:${contractAddress}`,
+    ...(v.publicKey.is_left
+      ? {
+          publicKeyJwk: {
+            crv: v.publicKey.left.crv,
+            kty: v.publicKey.left.kty,
+            x: v.publicKey.left.x.toString(),
+          },
+        }
+      : {
+          publicKeyMultibase: v.publicKey.right.key,
+        }),
+  };
+
+  return DID;
+}
+
+export async function viewDidDetails(
+  contractAddress: string,
+  providers: DidProviders
+) {
+  try {
+    const contractState =
+      await providers.publicDataProvider.queryContractState(contractAddress);
+    if (contractState === null) {
+      return;
+    }
+
+    const ledgerState = Did.ledger(contractState.data);
+    const verificationMethod = [];
+    const authenticationMethod = [];
+    const capabilityDelegation = [];
+    const capabilityInvocation = [];
+
+    for (const [k, v] of ledgerState.keyRing) {
+      const keyUsage = v.allowedUsages;
+      // Verification key
+      if (!keyUsage.authentication) {
+        verificationMethod.push(parseDid(contractAddress, v));
+      }
+      // Authentication key
+      if (keyUsage.authentication) {
+        authenticationMethod.push(parseDid(contractAddress, v));
+      }
+      // Capability Delegation key
+      if (keyUsage.capabilityDelegation) {
+        capabilityDelegation.push(parseDid(contractAddress, v));
+      }
+      // Capability Invocation key
+      if (keyUsage.capabilityInvocation) {
+        capabilityInvocation.push(parseDid(contractAddress, v));
+      }
+    }
+
+    const didDocument = {
+      "@context": "https://www.w3.org/ns/did/v1.1",
+      id: `did:midnames:${contractAddress}`,
+      authentication: authenticationMethod,
+      verificationMethod: verificationMethod,
+      capabilityInvocation: capabilityInvocation,
+      capabilityDelegation: capabilityDelegation,
+      service: [],
+    };
+    logger.info(JSON.stringify(didDocument, null, 2));
+  } catch (error) {
+    logger.error(`Failed to view DID details: ${error}`);
+  }
+}
 
 export const deactivateDid = async (
   didContract: DeployedDidContract,

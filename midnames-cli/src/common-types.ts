@@ -25,3 +25,5 @@ export type AllowedUsages = {authentication: boolean,
         capabilityDelegation: boolean,
         capabilityInvocation: boolean,
         keyAgreement: boolean};
+
+export type VerificationMethodType = Did.VerificationMethodType;
