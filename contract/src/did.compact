@@ -44,7 +44,7 @@ export enum ActionType {
     CapabilityDelegation,
 }
 
-struct AllowedUsages {
+export struct AllowedUsages {
     authentication: Boolean,
     assertionMethod: Boolean,
     keyAgreement: Boolean,
@@ -88,14 +88,14 @@ export circuit removeKey(keyId: Opaque<"string">): [] {
 export circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
     assert(active, "DID is inactive");
     assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+    assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
 
     const d_key = keyRing.lookup(disclose(keyId));
-    assert(keyRing.member(d_key.id), "Key is not in KeyRing");
 
     const d_actionType = disclose(actionType);
     if (d_actionType == ActionType.Authentication) {
         keyRing.insert(d_key.id, PublicKey{ ...d_key,
-            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, assertionMethod: true }
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, authentication: true }
         });
     } else if (d_actionType == ActionType.AssertionMethod) {
         keyRing.insert(d_key.id, PublicKey{ ...d_key,
@@ -121,14 +121,14 @@ export circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType):
 export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
     assert(active, "DID is inactive");
     assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+    assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
 
     const d_key = keyRing.lookup(disclose(keyId));
-    assert(keyRing.member(d_key.id), "Key is not in KeyRing");
 
     const d_actionType = disclose(actionType);
     if (d_actionType == ActionType.Authentication) {
         keyRing.insert(d_key.id, PublicKey{ ...d_key,
-            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, assertionMethod: false }
+            allowedUsages: AllowedUsages{ ...d_key.allowedUsages, authentication: false }
         });
     } else if (d_actionType == ActionType.AssertionMethod) {
         keyRing.insert(d_key.id, PublicKey{ ...d_key,

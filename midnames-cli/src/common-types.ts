@@ -20,10 +20,6 @@ export type PublicKey = Did.PublicKey;
 
 export type Keys = Did.Either<Did.PublicKeyJwk, Did.PublicKeyMultibase >;
 
-export type AllowedUsages = {authentication: boolean,
-        assertionMethod: boolean,
-        capabilityDelegation: boolean,
-        capabilityInvocation: boolean,
-        keyAgreement: boolean};
+export type AllowedUsages = Did.AllowedUsages;
 
 export type VerificationMethodType = Did.VerificationMethodType;

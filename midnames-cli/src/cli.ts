@@ -899,19 +899,17 @@ async function handleAddKeyAllowedUsage(
       return;
     }
 
-    let usageChoice = parseInt(await rli.question(ALLOWED_USAGE_QUESTION), 10);
+    const usageChoice = parseInt(await rli.question(ALLOWED_USAGE_QUESTION), 10);
 
     if (isNaN(usageChoice) || usageChoice < 1 || usageChoice > 5) {
       logger.error("Invalid choice");
       return;
     }
 
-    usageChoice -= 1;
+    const actionType: Did.ActionType = usageChoice - 1;
+    const actionTypeName = Did.ActionType[actionType];
 
-    const actionType: Did.ActionType = usageChoice;
-    const actionTypeName = Did.ActionType[usageChoice];
-
-    logger.info("Selected action:", actionTypeName);
+    logger.info("Selected action:", actionType);
 
     const confirm = (await rli.question(
       `\nAdd '${actionTypeName}' usage to key '${keyId}'? (y/n): `
