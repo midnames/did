@@ -5,7 +5,10 @@ import CompactStandardLibrary;
 export sealed ledger controllerPublicKey: Bytes<32>;
 export ledger active: Boolean;
 export ledger keyRing: Map<Opaque<"string">, PublicKey>;
+export ledger service: Map<Opaque<"string">, Service>;
+
 export {Maybe, Either};
+
 export enum VerificationMethodType {
     Ed25519VerificationKey2020,
     JubJubVerificationKey2025,
@@ -50,6 +53,12 @@ export struct AllowedUsages {
     keyAgreement: Boolean,
     capabilityInvocation: Boolean,
     capabilityDelegation: Boolean,
+}
+
+export struct Service {
+    id: Opaque<"string">,
+    type: Opaque<"string">,
+    serviceEndpoint: Opaque<"string">,
 }
 
 witness localSecretKey(): Bytes<32>;
@@ -145,4 +154,20 @@ export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionTyp
             allowedUsages: AllowedUsages{ ...d_key.allowedUsages, capabilityDelegation: false }
         });
     }
+}
+
+export circuit addService(service: Service): [] {
+    assert(active, "DID is inactive");
+    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+    const d_service = disclose(service);
+    assert(!services.member(d_service.id), "Cannot repeat Service id");
+    services.insert(d_service.id, d_service);
+}
+
+export circuit removeService(serviceId: Opaque<"string">): [] {
+    assert(active, "DID is inactive");
+    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+    const d_serviceId = disclose(serviceId);
+    assert(keyRing.member(disclose(serviceId)), "Services is not in Services Set");
+    services.remove(d_serviceId);
 }
