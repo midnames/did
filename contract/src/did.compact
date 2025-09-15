@@ -91,8 +91,8 @@ export circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType):
     assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
 
     const d_key = keyRing.lookup(disclose(keyId));
-
     const d_actionType = disclose(actionType);
+
     if (d_actionType == ActionType.Authentication) {
         keyRing.insert(d_key.id, PublicKey{ ...d_key,
             allowedUsages: AllowedUsages{ ...d_key.allowedUsages, authentication: true }
@@ -114,8 +114,6 @@ export circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType):
             allowedUsages: AllowedUsages{ ...d_key.allowedUsages, capabilityDelegation: true }
         });
     }
-
-    keyRing.insert(d_key.id, d_key);
 }
 
 export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
@@ -124,8 +122,8 @@ export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionTyp
     assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
 
     const d_key = keyRing.lookup(disclose(keyId));
-
     const d_actionType = disclose(actionType);
+
     if (d_actionType == ActionType.Authentication) {
         keyRing.insert(d_key.id, PublicKey{ ...d_key,
             allowedUsages: AllowedUsages{ ...d_key.allowedUsages, authentication: false }
@@ -147,6 +145,4 @@ export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionTyp
             allowedUsages: AllowedUsages{ ...d_key.allowedUsages, capabilityDelegation: false }
         });
     }
-
-    keyRing.insert(d_key.id, d_key);
 }
