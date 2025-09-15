@@ -1,34 +1,50 @@
 export interface DidJsonDocument {
-  id: string;
-  context?: string[];
-  "@context"?: string[];
-  verificationMethod?: Array<{
+    id: string;
+    context?: string[];
+    "@context"?: string[];
+    verificationMethod?: Array<VerificationMethod>;
+    authentication?: Array<string | VerificationMethod>;
+    service?: Array<Service>;
+    credentials?: Array<Credential>;
+    updated?: string;
+}
+
+type Controller = string | string[];
+
+enum KeyType {
+    EC,
+    RSA,
+    Oct,
+}
+
+enum CurveType {
+    Ed25519,
+    JubJub,
+}
+
+type PublicKeyJwk = {
+    kty: KeyType;
+    crv: CurveType;
+    x: string;
+}
+
+type VerificationMethod = {
     id: string;
     type: string;
-    controller: string;
-    publicKeyHex?: string;
-    AdaAddress?: string;
+    controller: Controller;
+    publicKeyJwk?: PublicKeyJwk;
     publicKeyMultibase?: string;
-  }>;
-  authentication?: Array<
-    | string
-    | {
-        id: string;
-        type: string;
-        controller: string | string[];
-        publicKeyMultibase?: string;
-        publicKeyHex?: string;
-        AdaAddress?: string;
-      }
-  >;
-  service?: Array<{
+    publicKeyHex?: string;
+}
+
+type Service = {
     id: string;
     type: string;
     serviceEndpoint: string;
-  }>;
-  credentials?: Array<{
+}
+
+type Credential = {
     data: string;
+    publicKeyJwk?: PublicKeyJwk;
     publicKeyMultibase: string;
-  }>;
-  updated?: string;
 }

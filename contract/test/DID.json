@@ -1,0 +1,51 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/ed25519-2020/v1"
+  ],
+  "id": "did:midnames:test-example-12345",
+  "verificationMethod": [
+    {
+      "id": "did:midnames:test-example-12345#keys-1",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:midnames:test-example-12345",
+      "publicKeyMultibase": "z6MkHaXU2BzXhf8X4n6Q1Q2QJ9CkN5j8L9M2P3R4S5T6U7V8W9X"
+    },
+    {
+      "id": "did:midnames:test-example-12345#keys-2",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:midnames:test-example-12345",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "VCpo2LMLhn6iWku8MKvS0jN6b4UrkXJjzVZdwPBhDd8"
+      }
+    }
+  ],
+  "authentication": [
+    "did:midnames:test-example-12345#keys-1",
+    {
+      "id": "did:midnames:test-example-12345#auth-key",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:midnames:test-example-12345",
+      "publicKeyMultibase": "z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"
+    }
+  ],
+  "assertionMethod": [
+    "did:midnames:test-example-12345#keys-2"
+  ],
+  "keyAgreement": [
+    "did:midnames:test-example-12345#keys-1"
+  ],
+  "capabilityInvocation": [
+    "did:midnames:test-example-12345#keys-2"
+  ],
+  "service": [
+    {
+      "id": "did:midnames:test-example-12345#messaging",
+      "type": "DIDCommMessaging",
+      "serviceEndpoint": "https://example.com/messaging"
+    }
+  ],
+  "updated": "2024-01-15T10:30:00Z"
+}

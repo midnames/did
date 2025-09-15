@@ -10,12 +10,49 @@ import {
   ledger,
   type PublicKey,
   type AllowedUsages,
-  type ActionType,
+  ActionType,
   VerificationMethodType,
   KeyType,
   CurveType
 } from "../src/managed/did/contract/index.cjs";
 import { type DidPrivateState, witnesses } from "../src/witnesses.js";
+import * as fs from "node:fs";
+import path, { dirname } from "node:path";
+
+/**
+ * DID JSON Document interface for parsing
+ */
+export interface DidJsonDocument {
+  "@context": string[];
+  id: string;
+  verificationMethod?: Array<{
+    id: string;
+    type: string;
+    controller: string;
+    publicKeyMultibase?: string;
+    publicKeyJwk?: {
+      kty: string;
+      crv: string;
+      x: string;
+    };
+  }>;
+  authentication?: Array<string | {
+    id: string;
+    type: string;
+    controller: string;
+    publicKeyMultibase?: string;
+  }>;
+  assertionMethod?: string[];
+  keyAgreement?: string[];
+  capabilityInvocation?: string[];
+  capabilityDelegation?: string[];
+  service?: Array<{
+    id: string;
+    type: string;
+    serviceEndpoint: string;
+  }>;
+  updated?: string;
+}
 
 /**
  * DID Contract Simulator for testing DID operations without blockchain deployment
@@ -339,5 +376,240 @@ export class DIDSimulator {
       keyRingSize: Number(keyRing.size()),
       keys
     };
+  }
+
+  /**
+   * Parse a DID JSON file and return the parsed document
+   */
+  public parseJsonDID(filePath: string): DidJsonDocument {
+    try {
+      const json_path = path.join(__dirname, filePath);
+      const fileContent = fs.readFileSync(json_path, 'utf-8');
+      const didDocument: DidJsonDocument = JSON.parse(fileContent);
+      
+      // Basic validation
+      if (!didDocument.id) {
+        throw new Error("DID document must have an 'id' field");
+      }
+      if (!didDocument["@context"]) {
+        throw new Error("DID document must have a '@context' field");
+      }
+      
+      return didDocument;
+    } catch (error) {
+      console.log(__dirname);      
+      throw new Error(`Failed to parse DID JSON file: ${error}`);
+    }
+  }
+
+  /**
+   * Write a parsed DID document to the contract by adding keys and setting usages
+   */
+  public writeDidToContract(didDocument: DidJsonDocument): void {
+    try {
+      // Process verification methods first
+      if (didDocument.verificationMethod) {
+        for (const verificationMethod of didDocument.verificationMethod) {
+          const keyId = this.extractKeyId(verificationMethod.id);
+          const publicKey = this.createPublicKeyFromVerificationMethod(verificationMethod, keyId);
+          this.addKey(publicKey);
+        }
+      }
+
+      // Process authentication methods (embedded ones)
+      if (didDocument.authentication) {
+        for (const auth of didDocument.authentication) {
+          if (typeof auth === 'object') {
+            // Embedded authentication method
+            const keyId = this.extractKeyId(auth.id);
+            const publicKey = this.createPublicKeyFromVerificationMethod(auth, keyId);
+            this.addKey(publicKey);
+            this.addAllowedUsage(keyId, ActionType.Authentication);
+          } else {
+            // Reference to existing verification method
+            const keyId = this.extractKeyId(auth);
+            this.addAllowedUsage(keyId, ActionType.Authentication);
+          }
+        }
+      }
+
+      // Process assertion methods
+      if (didDocument.assertionMethod) {
+        for (const assertionMethod of didDocument.assertionMethod) {
+          const keyId = this.extractKeyId(assertionMethod);
+          this.addAllowedUsage(keyId, ActionType.AssertionMethod);
+        }
+      }
+
+      // Process key agreement
+      if (didDocument.keyAgreement) {
+        for (const keyAgreement of didDocument.keyAgreement) {
+          const keyId = this.extractKeyId(keyAgreement);
+          this.addAllowedUsage(keyId, ActionType.KeyAgreement);
+        }
+      }
+
+      // Process capability invocation
+      if (didDocument.capabilityInvocation) {
+        for (const capabilityInvocation of didDocument.capabilityInvocation) {
+          const keyId = this.extractKeyId(capabilityInvocation);
+          this.addAllowedUsage(keyId, ActionType.CapabilityInvocation);
+        }
+      }
+
+      // Process capability delegation
+      if (didDocument.capabilityDelegation) {
+        for (const capabilityDelegation of didDocument.capabilityDelegation) {
+          const keyId = this.extractKeyId(capabilityDelegation);
+          this.addAllowedUsage(keyId, ActionType.CapabilityDelegation);
+        }
+      }
+
+    } catch (error) {
+      throw new Error(`Failed to write DID to contract: ${error}`);
+    }
+  }
+
+  /**
+   * Retrieve DID data from contract and format as DID document
+   */
+  public getDidFromContract(): DidJsonDocument {
+    const contractAddress = this.getContractAddress();
+    const keyRing = this.getKeyRing();
+
+    const verificationMethod: Array<any> = [];
+    const authentication: Array<string> = [];
+    const assertionMethod: Array<string> = [];
+    const keyAgreement: Array<string> = [];
+    const capabilityInvocation: Array<string> = [];
+    const capabilityDelegation: Array<string> = [];
+
+    // Process all keys in the keyring
+    for (const [keyId, publicKey] of keyRing) {
+      const fullKeyId = `did:midnames:${contractAddress}#${keyId}`;
+      
+      // Add to verification methods
+      const verificationMethodEntry: any = {
+        id: fullKeyId,
+        type: this.getVerificationMethodTypeString(publicKey.type),
+        controller: `did:midnames:${contractAddress}`
+      };
+
+      if (publicKey.publicKey.is_left) {
+        // JWK format
+        verificationMethodEntry.publicKeyJwk = {
+          kty: this.getKeyTypeString(publicKey.publicKey.left.kty),
+          crv: this.getCurveTypeString(publicKey.publicKey.left.crv),
+          x: publicKey.publicKey.left.x.toString()
+        };
+      } else {
+        // Multibase format
+        verificationMethodEntry.publicKeyMultibase = publicKey.publicKey.right.key;
+      }
+
+      verificationMethod.push(verificationMethodEntry);
+
+      // Add to appropriate usage arrays based on allowed usages
+      if (publicKey.allowedUsages.authentication) {
+        authentication.push(fullKeyId);
+      }
+      if (publicKey.allowedUsages.assertionMethod) {
+        assertionMethod.push(fullKeyId);
+      }
+      if (publicKey.allowedUsages.keyAgreement) {
+        keyAgreement.push(fullKeyId);
+      }
+      if (publicKey.allowedUsages.capabilityInvocation) {
+        capabilityInvocation.push(fullKeyId);
+      }
+      if (publicKey.allowedUsages.capabilityDelegation) {
+        capabilityDelegation.push(fullKeyId);
+      }
+    }
+
+    return {
+      "@context": ["https://www.w3.org/ns/did/v1"],
+      id: `did:midnames:${contractAddress}`,
+      verificationMethod,
+      ...(authentication.length > 0 && { authentication }),
+      ...(assertionMethod.length > 0 && { assertionMethod }),
+      ...(keyAgreement.length > 0 && { keyAgreement }),
+      ...(capabilityInvocation.length > 0 && { capabilityInvocation }),
+      ...(capabilityDelegation.length > 0 && { capabilityDelegation })
+    };
+  }
+
+  /**
+   * Helper method to extract key ID from full DID key reference
+   */
+  private extractKeyId(fullKeyId: string): string {
+    const parts = fullKeyId.split('#');
+    return parts.length > 1 ? parts[1] : fullKeyId;
+  }
+
+  /**
+   * Helper method to create PublicKey from verification method
+   */
+  private createPublicKeyFromVerificationMethod(verificationMethod: any, keyId: string): PublicKey {
+    const allowedUsages: AllowedUsages = {
+      authentication: false,
+      assertionMethod: false,
+      keyAgreement: false,
+      capabilityInvocation: false,
+      capabilityDelegation: false
+    };
+
+    if (verificationMethod.publicKeyJwk) {
+      // Handle JWK format
+      return {
+        id: keyId,
+        type: VerificationMethodType.Ed25519VerificationKey2020,
+        publicKey: {
+          is_left: true,
+          left: {
+            kty: KeyType.EC,
+            crv: CurveType.Ed25519,
+            x: BigInt("12345678901234567890") // Sample value for testing
+          },
+          right: { key: "" }
+        },
+        allowedUsages
+      };
+    } else if (verificationMethod.publicKeyMultibase) {
+      // Handle multibase format
+      return {
+        id: keyId,
+        type: VerificationMethodType.Ed25519VerificationKey2020,
+        publicKey: {
+          is_left: false,
+          left: {
+            kty: KeyType.EC,
+            crv: CurveType.Ed25519,
+            x: 0n
+          },
+          right: {
+            key: verificationMethod.publicKeyMultibase
+          }
+        },
+        allowedUsages
+      };
+    } else {
+      throw new Error(`Unsupported key format in verification method: ${keyId}. Only publicKeyJwk and publicKeyMultibase are supported.`);
+    }
+  }
+
+  /**
+   * Helper methods for type conversion
+   */
+  private getVerificationMethodTypeString(type: VerificationMethodType): string {
+    return VerificationMethodType[type];
+  }
+
+  private getKeyTypeString(keyType: KeyType): string {
+    return KeyType[keyType];
+  }
+
+  private getCurveTypeString(curveType: CurveType): string {
+    return CurveType[curveType];
   }
 }

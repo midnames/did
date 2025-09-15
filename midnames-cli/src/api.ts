@@ -198,7 +198,6 @@ export interface DidDocument {
     type: string;
     controller: string;
     publicKeyHex?: string;
-    AdaAddress?: string;
     publicKeyMultibase?: string;
   }>;
   authentication?: Array<
@@ -208,7 +207,6 @@ export interface DidDocument {
         type: string;
         controller: string;
         publicKeyHex?: string;
-        AdaAddress?: string;
         publicKeyMultibase?: string;
       }
   >;
@@ -546,12 +544,6 @@ export const createDidFromDocument = async (
             left: { hex: parsePublicKeyHex(vm.publicKeyHex) },
             right: { address: new Uint8Array(104) },
           };
-        } else if (vm.AdaAddress) {
-          key = {
-            is_left: false,
-            left: { hex: new Uint8Array(130) },
-            right: { address: parseAdaAddress(vm.AdaAddress) },
-          };
         } else {
           key = {
             is_left: true,
@@ -596,12 +588,6 @@ export const createDidFromDocument = async (
                     left: { hex: parsePublicKeyHex(auth.publicKeyMultibase) },
                     right: { address: new Uint8Array(104) },
                   }
-                : auth.AdaAddress
-                  ? {
-                      is_left: false,
-                      left: { hex: new Uint8Array(130) },
-                      right: { address: parseAdaAddress(auth.AdaAddress) },
-                    }
                   : {
                       is_left: true,
                       left: { hex: new Uint8Array(130) },
