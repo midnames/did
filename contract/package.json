@@ -17,10 +17,13 @@
   },
   "scripts": {
     "compact": "compact compile src/did.compact src/managed/did",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:compile": "npm run compact && vitest run",
     "build": "rm -rf dist && tsc --project tsconfig.build.json && cp -Rf ./src/managed ./dist/managed && cp ./src/did.compact ./dist",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "3.1.4"
   }
 }

@@ -36,7 +36,7 @@ export default defineConfig({
         statements: -269
       }
     },
-    reporters: ["default", ["junit", { outputFile: "reports/report.xml" }]]
+    reporters: ["default", ["junit", { outputFile: "reports/coverage-report.xml" }]]
   },
   resolve: {
     extensions: [".ts", ".js"],
