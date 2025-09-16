@@ -16,7 +16,7 @@
       "type": "Ed25519VerificationKey2020",
       "controller": "did:midnames:test-example-12345",
       "publicKeyJwk": {
-        "kty": "OKP",
+        "kty": "RCA",
         "crv": "Ed25519",
         "x": "VCpo2LMLhn6iWku8MKvS0jN6b4UrkXJjzVZdwPBhDd8"
       }
