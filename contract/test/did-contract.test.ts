@@ -3,6 +3,7 @@ import { DIDSimulator } from "./DIDSimulator.js";
 import { ActionType } from "../src/managed/did/contract/index.cjs";
 import { createSampleKey, createKeyWithUsages } from "../utils/utils.js";
 import { parseJsonDID, writeDidToContract } from "../utils/json-parser.js";
+import { DidJsonDocument } from "../../did-cli/src/types.js";
 
 describe("DID Contract Tests", () => {
   let simulator: DIDSimulator;
@@ -32,39 +33,39 @@ describe("DID Contract Tests", () => {
 
   describe("DID JSON parsing & fetching", () => {
     test("should parse a JSON DID file & store correctly", () => {
-      // const location = "did-document-example.json";
-      //
-      // // Step 1: Parse the JSON DID file
-      // const originalDID = parseJsonDID(location);
-      // expect(originalDID).toBeDefined();
-      // expect(originalDID.id).toBe("did:midnames:test-example-12345");
-      // expect(originalDID["@context"]).toContain("https://www.w3.org/ns/did/v1");
-      //
-      // // Step 2: Write the DID to the contract
-      // writeDidToContract(originalDID);
-      //
-      // // Step 3: Verify keys were added to the contract
-      // expect(simulator.getKeyRing().size).toBe(3); // 2 verification methods + 1 authentication key
-      // expect(simulator.hasKey("keys-1")).toBe(true);
-      // expect(simulator.hasKey("keys-2")).toBe(true);
-      // expect(simulator.hasKey("auth-key")).toBe(true);
-      //
-      // // Step 4: Verify key usages were set correctly
-      // const key1 = simulator.getKey("keys-1");
-      // expect(key1?.allowedUsages.authentication).toBe(true);
-      // expect(key1?.allowedUsages.keyAgreement).toBe(true);
-      //
-      // const key2 = simulator.getKey("keys-2");
-      // expect(key2?.allowedUsages.assertionMethod).toBe(true);
-      // expect(key2?.allowedUsages.capabilityInvocation).toBe(true);
-      //
-      // const authKey = simulator.getKey("auth-key");
-      // expect(authKey?.allowedUsages.authentication).toBe(true);
-      //
-      // // Step 5: Verify key types are correct
-      // expect(key1?.publicKey.is_left).toBe(false); // multibase
-      // expect(key2?.publicKey.is_left).toBe(true);  // JWK
-      // expect(authKey?.publicKey.is_left).toBe(false); // multibase
+      const location = "did-document-example.json";
+
+      // Step 1: Parse the JSON DID file
+      const originalDID: DidJsonDocument = parseJsonDID(location);
+      expect(originalDID).toBeDefined();
+      expect(originalDID.id).toBe("did:midnames:test-example-12345");
+      expect(originalDID["@context"]).toContain("https://www.w3.org/ns/did/v1");
+
+      // Step 2: Write the DID to the contract
+      writeDidToContract(simulator, originalDID);
+
+      // Step 3: Verify keys were added to the contract
+      expect(simulator.getKeyRing().size).toBe(3); // 2 verification methods + 1 authentication key
+      expect(simulator.hasKey("keys-1")).toBe(true);
+      expect(simulator.hasKey("keys-2")).toBe(true);
+      expect(simulator.hasKey("auth-key")).toBe(true);
+
+      // Step 4: Verify key usages were set correctly
+      const key1 = simulator.getKey("keys-1");
+      expect(key1?.allowedUsages.authentication).toBe(true);
+      expect(key1?.allowedUsages.keyAgreement).toBe(true);
+
+      const key2 = simulator.getKey("keys-2");
+      expect(key2?.allowedUsages.assertionMethod).toBe(true);
+      expect(key2?.allowedUsages.capabilityInvocation).toBe(true);
+
+      const authKey = simulator.getKey("auth-key");
+      expect(authKey?.allowedUsages.authentication).toBe(true);
+
+      // Step 5: Verify key types are correct
+      expect(key1?.publicKey.is_left).toBe(false); // multibase
+      expect(key2?.publicKey.is_left).toBe(true);  // JWK
+      expect(authKey?.publicKey.is_left).toBe(false); // multibase
     });
 
     test("should retrieve the parsed JSON DID in correct format", () => {

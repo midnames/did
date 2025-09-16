@@ -1,7 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
-import type { DidJsonDocument } from "../../did-cli/src/types.js";
+import type { DidJsonDocument, VerificationMethod } from "../../did-cli/src/types.js";
 import { ActionType, AllowedUsages, CurveType, KeyType, PublicKey, VerificationMethodType } from "../src/managed/did/contract/index.cjs";
+import { DIDSimulator } from "../test/DIDSimulator.js";
 
 
 /**
@@ -31,7 +32,7 @@ export function parseJsonDID(filePath: string): DidJsonDocument {
 /**
  * Write a parsed DID document to the contract by adding keys and setting usages
  */
-export function writeDidToContract(didDocument: DidJsonDocument): void {
+export function writeDidToContract(simulator: DIDSimulator, didDocument: DidJsonDocument): void {
   try {
     // Process verification methods first
     if (didDocument.verificationMethod) {
@@ -42,54 +43,30 @@ export function writeDidToContract(didDocument: DidJsonDocument): void {
       }
     }
 
-    // Process authentication methods (embedded ones)
     if (didDocument.authentication) {
-      for (const auth of didDocument.authentication) {
-        if (typeof auth === 'object') {
-          // Embedded authentication method
-          const keyId = extractKeyId(auth.id);
-          const publicKey = createPublicKeyFromVerificationMethod(auth, keyId);
-          simulator.addKey(publicKey);
-          this.addAllowedUsage(keyId, ActionType.Authentication);
-        } else {
-          // Reference to existing verification method
-          const keyId = extractKeyId(auth);
-          this.addAllowedUsage(keyId, ActionType.Authentication);
-        }
-      }
+      for (const verificationMethod of didDocument.authentication)
+        processVerificationMethod(simulator, verificationMethod, ActionType.Authentication);
     }
 
-    // // Process assertion methods
-    // if (didDocument.assertionMethod) {
-    //   for (const assertionMethod of didDocument.assertionMethod) {
-    //     const keyId = extractKeyId(assertionMethod);
-    //     this.addAllowedUsage(keyId, ActionType.AssertionMethod);
-    //   }
-    // }
+    if (didDocument.assertionMethod) {
+      for (const verificationMethod of didDocument.assertionMethod)
+        processVerificationMethod(simulator, verificationMethod, ActionType.AssertionMethod);
+    }
 
-    // // Process key agreement
-    // if (didDocument.keyAgreement) {
-    //   for (const keyAgreement of didDocument.keyAgreement) {
-    //     const keyId = extractKeyId(keyAgreement);
-    //     this.addAllowedUsage(keyId, ActionType.KeyAgreement);
-    //   }
-    // }
+    if (didDocument.keyAgreement) {
+      for (const verificationMethod of didDocument.keyAgreement)
+        processVerificationMethod(simulator, verificationMethod, ActionType.KeyAgreement);
+    }
 
-    // // Process capability invocation
-    // if (didDocument.capabilityInvocation) {
-    //   for (const capabilityInvocation of didDocument.capabilityInvocation) {
-    //     const keyId = extractKeyId(capabilityInvocation);
-    //     this.addAllowedUsage(keyId, ActionType.CapabilityInvocation);
-    //   }
-    // }
+    if (didDocument.capabilityInvocation) {
+      for (const verificationMethod of didDocument.capabilityInvocation)
+        processVerificationMethod(simulator, verificationMethod, ActionType.CapabilityInvocation);
+    }
 
-    // // Process capability delegation
-    // if (didDocument.capabilityDelegation) {
-    //   for (const capabilityDelegation of didDocument.capabilityDelegation) {
-    //     const keyId = extractKeyId(capabilityDelegation);
-    //     this.addAllowedUsage(keyId, ActionType.CapabilityDelegation);
-    //   }
-    // }
+    if (didDocument.capabilityDelegation) {
+      for (const verificationMethod of didDocument.capabilityDelegation)
+        processVerificationMethod(simulator, verificationMethod, ActionType.CapabilityDelegation);
+    }
 
   } catch (error) {
     throw new Error(`Failed to write DID to contract: ${error}`);
@@ -155,7 +132,7 @@ export function getDidFromContract(): DidJsonDocument {
 
   return {
     "@context": ["https://www.w3.org/ns/did/v1"],
-      id: `did:midnames:${contractAddress}`,
+    id: `did:midnames:${contractAddress}`,
     verificationMethod,
     ...(authentication.length > 0 && { authentication }),
     ...(assertionMethod.length > 0 && { assertionMethod }),
@@ -176,7 +153,7 @@ function extractKeyId(fullKeyId: string): string {
 /**
  * Helper method to create PublicKey from verification method
  */
-function createPublicKeyFromVerificationMethod(verificationMethod: any, keyId: string): PublicKey {
+function createPublicKeyFromVerificationMethod(verificationMethod: VerificationMethod, keyId: string): PublicKey {
   const allowedUsages: AllowedUsages = {
     authentication: false,
     assertionMethod: false,
@@ -197,7 +174,7 @@ function createPublicKeyFromVerificationMethod(verificationMethod: any, keyId: s
           crv: CurveType.Ed25519,
           x: BigInt("12345678901234567890") // Sample value for testing
         },
-      right: { key: "" }
+        right: { key: "" }
       },
       allowedUsages
     };
@@ -237,4 +214,18 @@ function getKeyTypeString(keyType: KeyType): string {
 
 function getCurveTypeString(curveType: CurveType): string {
   return CurveType[curveType];
+}
+
+function processVerificationMethod(
+  simulator: DIDSimulator, verificationMethod: string | VerificationMethod, actionType: ActionType
+): void {
+  if (typeof verificationMethod === "string") {
+    const keyId = extractKeyId(verificationMethod);
+    simulator.addAllowedUsage(keyId, actionType);
+  } else { // VerificationMethod
+    const keyId = extractKeyId(verificationMethod.id);
+    const publicKey = createPublicKeyFromVerificationMethod(verificationMethod, keyId);
+    simulator.addKey(publicKey);
+    simulator.addAllowedUsage(keyId, actionType);
+  }
 }

@@ -3,7 +3,11 @@ export interface DidJsonDocument {
     context?: string[];
     "@context"?: string[];
     verificationMethod?: Array<VerificationMethod>;
+    assertionMethod?: Array<string | VerificationMethod>;
     authentication?: Array<string | VerificationMethod>;
+    keyAgreement?: Array<string | VerificationMethod>;
+    capabilityInvocation?: Array<string | VerificationMethod>;
+    capabilityDelegation?: Array<string | VerificationMethod>;
     service?: Array<Service>;
     credentials?: Array<Credential>;
     updated?: string;
@@ -28,7 +32,7 @@ type PublicKeyJwk = {
     x: string;
 }
 
-type VerificationMethod = {
+export type VerificationMethod = {
     id: string;
     type: string;
     controller: Controller;
