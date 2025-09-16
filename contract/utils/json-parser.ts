@@ -76,9 +76,9 @@ export function writeDidToContract(simulator: DIDSimulator, didDocument: DidJson
 /**
  * Retrieve DID data from contract and format as DID document
  */
-export function getDidFromContract(): DidJsonDocument {
-  const contractAddress = this.getContractAddress();
-  const keyRing = this.getKeyRing();
+export function getDidFromContract(simulator: DIDSimulator): DidJsonDocument {
+  const contractAddress = simulator.getContractAddress();
+  const keyRing = simulator.getKeyRing();
 
   const verificationMethod: Array<any> = [];
   const authentication: Array<string> = [];
@@ -94,15 +94,15 @@ export function getDidFromContract(): DidJsonDocument {
     // Add to verification methods
     const verificationMethodEntry: any = {
       id: fullKeyId,
-      type: this.getVerificationMethodTypeString(publicKey.type),
+      type: getVerificationMethodTypeString(publicKey.type),
       controller: `did:midnames:${contractAddress}`
     };
 
     if (publicKey.publicKey.is_left) {
       // JWK format
       verificationMethodEntry.publicKeyJwk = {
-        kty: this.getKeyTypeString(publicKey.publicKey.left.kty),
-        crv: this.getCurveTypeString(publicKey.publicKey.left.crv),
+        kty: getKeyTypeString(publicKey.publicKey.left.kty),
+        crv: getCurveTypeString(publicKey.publicKey.left.crv),
         x: publicKey.publicKey.left.x.toString()
       };
     } else {

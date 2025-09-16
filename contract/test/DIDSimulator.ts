@@ -18,8 +18,7 @@ import {
 import { type DidPrivateState, witnesses } from "../src/witnesses.js";
 import * as fs from "node:fs";
 import path, { dirname } from "node:path";
-import { DidJsonDocument } from "../midnames-cli/src/types.js";
-import { createSampleKey, generateSecretKey } from "../contract/utils/utils.js";
+import { createSampleKey, generateSecretKey } from "../utils/utils.js";
 
 /**
  * DID Contract Simulator for testing DID operations without blockchain deployment

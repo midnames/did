@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach } from "vitest";
 import { DIDSimulator } from "./DIDSimulator.js";
 import { ActionType } from "../src/managed/did/contract/index.cjs";
 import { createSampleKey, createKeyWithUsages } from "../utils/utils.js";
-import { parseJsonDID, writeDidToContract } from "../utils/json-parser.js";
+import { parseJsonDID, writeDidToContract, getDidFromContract } from "../utils/json-parser.js";
 import { DidJsonDocument } from "../../did-cli/src/types.js";
 
 describe("DID Contract Tests", () => {
@@ -69,83 +69,83 @@ describe("DID Contract Tests", () => {
     });
 
     test("should retrieve the parsed JSON DID in correct format", () => {
-      // const location = "did-document-example.json";
-      //
-      // // Parse and write the original DID
-      // const originalDID = parseJsonDID(location);
-      // writeDidToContract(originalDID);
-      //
-      // // Retrieve the DID from the contract
-      // const retrievedDID = simulator.getDidFromContract();
-      //
-      // // Verify basic structure
-      // expect(retrievedDID).toBeDefined();
-      // expect(retrievedDID["@context"]).toEqual(["https://www.w3.org/ns/did/v1"]);
-      // expect(retrievedDID.id).toMatch(/^did:midnames:/);
-      //
-      // // Verify verification methods were preserved
-      // expect(retrievedDID.verificationMethod).toHaveLength(3);
-      // expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("keys-1"))).toBe(true);
-      // expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("keys-2"))).toBe(true);
-      // expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("auth-key"))).toBe(true);
-      //
-      // // Verify usage arrays are present and correct
-      // expect(retrievedDID.authentication).toBeDefined();
-      // expect(retrievedDID.authentication?.length).toBe(2); // keys-1 and auth-key
-      //
-      // expect(retrievedDID.assertionMethod).toBeDefined();
-      // expect(retrievedDID.assertionMethod?.length).toBe(1); // keys-2
-      //
-      // expect(retrievedDID.keyAgreement).toBeDefined();
-      // expect(retrievedDID.keyAgreement?.length).toBe(1); // keys-1
-      //
-      // expect(retrievedDID.capabilityInvocation).toBeDefined();
-      // expect(retrievedDID.capabilityInvocation?.length).toBe(1); // keys-2
-      //
-      // // Verify key formats are preserved
-      // const multibaseKey = retrievedDID.verificationMethod?.find(vm => vm.publicKeyMultibase);
-      // const jwkKey = retrievedDID.verificationMethod?.find(vm => vm.publicKeyJwk);
-      //
-      // expect(multibaseKey).toBeDefined();
-      // expect(jwkKey).toBeDefined();
-      // expect(jwkKey?.publicKeyJwk?.kty).toBe("EC");
-      // expect(jwkKey?.publicKeyJwk?.crv).toBe("Ed25519");
+      const location = "did-document-example.json";
+
+      // Parse and write the original DID
+      const originalDID = parseJsonDID(location);
+      writeDidToContract(simulator, originalDID);
+
+      // Retrieve the DID from the contract
+      const retrievedDID = getDidFromContract(simulator);
+
+      // Verify basic structure
+      expect(retrievedDID).toBeDefined();
+      expect(retrievedDID["@context"]).toEqual(["https://www.w3.org/ns/did/v1"]);
+      expect(retrievedDID.id).toMatch(/^did:midnames:/);
+
+      // Verify verification methods were preserved
+      expect(retrievedDID.verificationMethod).toHaveLength(3);
+      expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("keys-1"))).toBe(true);
+      expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("keys-2"))).toBe(true);
+      expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("auth-key"))).toBe(true);
+
+      // Verify usage arrays are present and correct
+      expect(retrievedDID.authentication).toBeDefined();
+      expect(retrievedDID.authentication?.length).toBe(2); // keys-1 and auth-key
+
+      expect(retrievedDID.assertionMethod).toBeDefined();
+      expect(retrievedDID.assertionMethod?.length).toBe(1); // keys-2
+
+      expect(retrievedDID.keyAgreement).toBeDefined();
+      expect(retrievedDID.keyAgreement?.length).toBe(1); // keys-1
+
+      expect(retrievedDID.capabilityInvocation).toBeDefined();
+      expect(retrievedDID.capabilityInvocation?.length).toBe(1); // keys-2
+
+      // Verify key formats are preserved
+      const multibaseKey = retrievedDID.verificationMethod?.find(vm => vm.publicKeyMultibase);
+      const jwkKey = retrievedDID.verificationMethod?.find(vm => vm.publicKeyJwk);
+
+      expect(multibaseKey).toBeDefined();
+      expect(jwkKey).toBeDefined();
+      expect(jwkKey?.publicKeyJwk?.kty).toBe("EC");
+      expect(jwkKey?.publicKeyJwk?.crv).toBe("Ed25519");
     });
 
     test("should maintain consistency between original and retrieved DID", () => {
-      // const location = "did-document-example.json";
-      //
-      // // Parse original DID
-      // const originalDID = parseJsonDID(location);
-      // const originalKeyCount = (originalDID.verificationMethod?.length || 0) +
-      //                         (originalDID.authentication?.filter(auth => typeof auth === 'object').length || 0);
-      //
-      // // Write to contract and retrieve
-      // writeDidToContract(originalDID);
-      // const retrievedDID = simulator.getDidFromContract();
-      //
-      // // Verify key count consistency
-      // expect(retrievedDID.verificationMethod?.length).toBe(originalKeyCount);
-      //
-      // // Verify all original keys have corresponding entries in retrieved DID
-      // if (originalDID.verificationMethod) {
-      //   for (const originalKey of originalDID.verificationMethod) {
-      //     const keyId = originalKey.id.split('#')[1];
-      //     const hasMatchingKey = retrievedDID.verificationMethod?.some(vm =>
-      //       vm.id.includes(keyId)
-      //     );
-      //     expect(hasMatchingKey).toBe(true);
-      //   }
-      // }
-      //
-      // // Verify usage consistency
-      // const originalAuthCount = originalDID.authentication?.length || 0;
-      // const retrievedAuthCount = retrievedDID.authentication?.length || 0;
-      // expect(retrievedAuthCount).toBeGreaterThanOrEqual(originalAuthCount - 1); // Account for reference vs embedded
-      //
-      // const originalAssertionCount = originalDID.assertionMethod?.length || 0;
-      // const retrievedAssertionCount = retrievedDID.assertionMethod?.length || 0;
-      // expect(retrievedAssertionCount).toBe(originalAssertionCount);
+      const location = "did-document-example.json";
+
+      // Parse original DID
+      const originalDID = parseJsonDID(location);
+      const originalKeyCount = (originalDID.verificationMethod?.length || 0) +
+                              (originalDID.authentication?.filter(auth => typeof auth === 'object').length || 0);
+
+      // Write to contract and retrieve
+      writeDidToContract(simulator, originalDID);
+      const retrievedDID = getDidFromContract(simulator);
+
+      // Verify key count consistency
+      expect(retrievedDID.verificationMethod?.length).toBe(originalKeyCount);
+
+      // Verify all original keys have corresponding entries in retrieved DID
+      if (originalDID.verificationMethod) {
+        for (const originalKey of originalDID.verificationMethod) {
+          const keyId = originalKey.id.split('#')[1];
+          const hasMatchingKey = retrievedDID.verificationMethod?.some(vm =>
+            vm.id.includes(keyId)
+          );
+          expect(hasMatchingKey).toBe(true);
+        }
+      }
+
+      // Verify usage consistency
+      const originalAuthCount = originalDID.authentication?.length || 0;
+      const retrievedAuthCount = retrievedDID.authentication?.length || 0;
+      expect(retrievedAuthCount).toBeGreaterThanOrEqual(originalAuthCount - 1); // Account for reference vs embedded
+
+      const originalAssertionCount = originalDID.assertionMethod?.length || 0;
+      const retrievedAssertionCount = retrievedDID.assertionMethod?.length || 0;
+      expect(retrievedAssertionCount).toBe(originalAssertionCount);
     });
   })
 
