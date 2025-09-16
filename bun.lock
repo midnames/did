@@ -42,7 +42,7 @@
         "@vitest/coverage-v8": "3.1.4",
       },
     },
-    "midnames-cli": {
+    "did-cli": {
       "name": "@midnames/cli",
       "version": "0.1.0",
       "dependencies": {
@@ -204,7 +204,7 @@
 
     "@js-sdsl/ordered-map": ["@js-sdsl/ordered-map@4.4.2", "", {}, "sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw=="],
 
-    "@midnames/cli": ["@midnames/cli@workspace:midnames-cli"],
+    "@midnames/cli": ["@midnames/cli@workspace:did-cli"],
 
     "@midnames/utils": ["@midnames/utils@workspace:utils"],
 

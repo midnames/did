@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "midnames-cli",
+    "did-cli",
     "contract",
     "utils"
   ],
@@ -13,7 +13,7 @@
     "build:utils": "bun run --cwd utils build",
     "build:compact": "bun run --cwd contract compact",
     "build:contract": "bun run --cwd contract build",
-    "build:cli": "bun run --cwd midnames-cli build",
+    "build:cli": "bun run --cwd did-cli build",
     "clean": "bun run --filter='*' clean && rm -rf node_modules/.cache",
     "typecheck": "bun run build:utils && bun run --filter='*' typecheck",
     "test": "bun run build:utils && bun run --filter='*' test",

@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import type { DidJsonDocument } from "../../midnames-cli/src/types.js";
+import type { DidJsonDocument } from "../../did-cli/src/types.js";
 import { ActionType, AllowedUsages, CurveType, KeyType, PublicKey, VerificationMethodType } from "../src/managed/did/contract/index.cjs";
 
 
