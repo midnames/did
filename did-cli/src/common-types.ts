@@ -1,10 +1,19 @@
-import { Did, type DidPrivateState } from '@midnight-ntwrk/midnight-did-contract';
-import type { ImpureCircuitId, MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
-import type { DeployedContract, FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
+import {
+  Did,
+  type DidPrivateState,
+} from "@midnight-ntwrk/midnight-did-contract";
+import type {
+  ImpureCircuitId,
+  MidnightProviders,
+} from "@midnight-ntwrk/midnight-js-types";
+import type {
+  DeployedContract,
+  FoundContract,
+} from "@midnight-ntwrk/midnight-js-contracts";
 
 export type DidCircuits = ImpureCircuitId<Did.Contract<DidPrivateState>>;
 
-export const DidPrivateStateId = 'DidPrivateState';
+export const DidPrivateStateId = "DidPrivateState";
 
 export type DidProviders = MidnightProviders<
   DidCircuits,
@@ -14,11 +23,13 @@ export type DidProviders = MidnightProviders<
 
 export type DidContract = Did.Contract<DidPrivateState>;
 
-export type DeployedDidContract = DeployedContract<DidContract> | FoundContract<DidContract>;
+export type DeployedDidContract =
+  | DeployedContract<DidContract>
+  | FoundContract<DidContract>;
 
 export type PublicKey = Did.PublicKey;
 
-export type Keys = Did.Either<Did.PublicKeyJwk, Did.PublicKeyMultibase >;
+export type Keys = Did.Either<Did.PublicKeyJwk, Did.PublicKeyMultibase>;
 
 export type AllowedUsages = Did.AllowedUsages;
 

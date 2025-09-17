@@ -10,19 +10,17 @@ import {
 import {
   type DidProviders,
   type DeployedDidContract,
-  type PublicKey,
   AllowedUsages,
 } from "./common-types";
 import { type Config, StandaloneConfig } from "./config";
 import * as api from "./api";
 import {
-    Did,
-    createDidSecretState
+  Did,
+  createDidSecretState,
 } from "@midnight-ntwrk/midnight-did-contract";
 import { v7 as uuidv7 } from "uuid";
 import * as fs from "node:fs";
 import { type DidJsonDocument } from "./types";
-import { VerificationMethodType } from "@midnight-ntwrk/midnight-did-contract/dist/managed/did/contract/index.cjs";
 
 let logger: Logger;
 /**
@@ -63,13 +61,13 @@ Select an option: `;
 
 async function buildWallet(
   config: Config,
-  rli: Interface
+  rli: Interface,
 ): Promise<(Wallet & Resource) | null> {
   if (config instanceof StandaloneConfig) {
     return await api.buildWalletAndWaitForFunds(
       config,
       GENESIS_MINT_WALLET_SEED,
-      ""
+      "",
     );
   }
   while (true) {
@@ -95,7 +93,7 @@ Which would you like to do? `);
 
 async function buildWalletFromSeed(
   config: Config,
-  rli: Interface
+  rli: Interface,
 ): Promise<Wallet & Resource> {
   const seed = await rli.question("Enter your wallet seed: ");
   return await api.buildWalletAndWaitForFunds(config, seed, "");
@@ -105,7 +103,7 @@ async function buildWalletFromSeed(
 const SECRET_KEY = new Uint8Array(32);
 
 async function createDidContract(
-  providers: DidProviders
+  providers: DidProviders,
 ): Promise<DeployedDidContract> {
   logger.info("Deploying new DID contract...");
 
@@ -125,10 +123,10 @@ async function createDidContract(
 
 async function updateDidContract(
   providers: DidProviders,
-  rli: Interface
+  rli: Interface,
 ): Promise<DeployedDidContract> {
   const contractAddress = await rli.question(
-    "What is the contract address (in hex)? "
+    "What is the contract address (in hex)? ",
   );
   const contract = await api.joinContract(providers, contractAddress);
 
@@ -165,10 +163,10 @@ async function updateDidContract(
 
 async function viewDidContract(
   providers: DidProviders,
-  rli: Interface
+  rli: Interface,
 ): Promise<DeployedDidContract> {
   const contractAddress = await rli.question(
-    "What is the contract address (in hex)? "
+    "What is the contract address (in hex)? ",
   );
 
   const contract = await api.joinContract(providers, contractAddress);
@@ -178,7 +176,9 @@ async function viewDidContract(
 }
 
 async function getDidId(rli: Interface): Promise<string> {
-  const didId = await rli.question("Enter the DID ID (e.g., did:midnames:1234abcdef): ");
+  const didId = await rli.question(
+    "Enter the DID ID (e.g., did:midnames:1234abcdef): ",
+  );
   if (!didId.trim()) {
     throw new Error("DID identifier cannot be empty");
   }
@@ -187,7 +187,7 @@ async function getDidId(rli: Interface): Promise<string> {
 
 async function mainLoop(
   providers: DidProviders,
-  rli: Interface
+  rli: Interface,
 ): Promise<DeployedDidContract | null> {
   while (true) {
     const choice = await rli.question(CREATE_UPDATE_OR_VIEW);
@@ -211,7 +211,7 @@ async function mainLoop(
 const mapContainerPort = (
   env: StartedDockerComposeEnvironment,
   url: string,
-  containerName: string
+  containerName: string,
 ) => {
   const mappedUrl = new URL(url);
   const container = env.getContainer(containerName);
@@ -224,7 +224,7 @@ const mapContainerPort = (
 export async function run(
   config: Config,
   _logger: Logger,
-  dockerEnv?: DockerComposeEnvironment
+  dockerEnv?: DockerComposeEnvironment,
 ): Promise<void> {
   logger = _logger;
   api.setLogger(_logger);
@@ -237,18 +237,18 @@ export async function run(
       config.indexer = mapContainerPort(
         env,
         config.indexer,
-        "midnames-indexer"
+        "midnames-indexer",
       );
       config.indexerWS = mapContainerPort(
         env,
         config.indexerWS,
-        "midnames-indexer"
+        "midnames-indexer",
       );
       config.node = mapContainerPort(env, config.node, "midnames-node");
       config.proofServer = mapContainerPort(
         env,
         config.proofServer,
-        "midnames-proof-server"
+        "midnames-proof-server",
       );
     }
   }
@@ -296,7 +296,7 @@ export async function run(
 async function handleCreateDidInteractive(
   providers: DidProviders,
   contract: DeployedDidContract,
-  rli: Interface
+  rli: Interface,
 ): Promise<void> {
   try {
     await createDidWithManualInput(providers, contract, rli);
@@ -308,7 +308,7 @@ async function handleCreateDidInteractive(
 async function createDidWithManualInput(
   providers: DidProviders,
   contract: DeployedDidContract,
-  rli: Interface
+  rli: Interface,
 ): Promise<void> {
   logger.info("\n=== DID Creation ===");
 
@@ -317,7 +317,7 @@ async function createDidWithManualInput(
 
   logger.info("\n--- (single) Private Key (local_secret_key) ---");
   const privateKeyInput = await rli.question(
-    "Enter (single) private key (32 bytes as 64-character hex string, press Enter to auto-generate): "
+    "Enter (single) private key (32 bytes as 64-character hex string, press Enter to auto-generate): ",
   );
 
   let privateKey: Uint8Array;
@@ -326,7 +326,7 @@ async function createDidWithManualInput(
     const hexRegex = /^[0-9a-fA-F]{64}$/;
     if (!hexRegex.test(privateKeyInput.trim())) {
       logger.error(
-        "Invalid private key format. Must be exactly 32 bytes as 64-character hex string (e.g., a1b2c3d4...)."
+        "Invalid private key format. Must be exactly 32 bytes as 64-character hex string (e.g., a1b2c3d4...).",
       );
       return;
     }
@@ -335,16 +335,16 @@ async function createDidWithManualInput(
   } else {
     privateKey = api.randomBytes(32);
     logger.info(
-      `Auto-generated (single) private key (32 bytes): ${Buffer.from(privateKey).toString("hex")}`
+      `Auto-generated (single) private key (32 bytes): ${Buffer.from(privateKey).toString("hex")}`,
     );
   }
 
   // Multiple Local Secret Keys for Witness (multiple_local_secret_keys)
   logger.info(
-    "\n--- Multiple Local Secret Keys (multiple_local_secret_keys) ---"
+    "\n--- Multiple Local Secret Keys (multiple_local_secret_keys) ---",
   );
   const multipleKeysInput = await rli.question(
-    "Enter additional secret keys (comma-separated, 32 bytes each as 64-character hex, max 5 keys, press Enter to skip): "
+    "Enter additional secret keys (comma-separated, 32 bytes each as 64-character hex, max 5 keys, press Enter to skip): ",
   );
 
   let multipleKeys: Uint8Array[] = [];
@@ -362,7 +362,7 @@ async function createDidWithManualInput(
     for (const keyStr of keyStrings) {
       if (!hexRegex.test(keyStr)) {
         logger.error(
-          `Invalid key format: ${keyStr}. Must be exactly 32 bytes as 64-character hex string.`
+          `Invalid key format: ${keyStr}. Must be exactly 32 bytes as 64-character hex string.`,
         );
         return;
       }
@@ -374,7 +374,7 @@ async function createDidWithManualInput(
   }
 
   const contextInput = await rli.question(
-    "Additional context URIs (comma-separated, press Enter for default): "
+    "Additional context URIs (comma-separated, press Enter for default): ",
   );
   const contexts = contextInput.trim()
     ? [
@@ -386,18 +386,18 @@ async function createDidWithManualInput(
   logger.info("\n--- Verification Method ---");
   const vmId =
     (await rli.question(
-      "Verification Method ID (press Enter for default): "
+      "Verification Method ID (press Enter for default): ",
     )) || "keys-1";
   const vmType =
     (await rli.question(
-      "Verification Method type (press Enter for BIP32-Ed25519): "
+      "Verification Method type (press Enter for BIP32-Ed25519): ",
     )) || "BIP32-Ed25519";
   const vmController =
     (await rli.question(`Controller (press Enter for self-sovereign): `)) ||
     didId;
 
   const keyTypeChoice = await rli.question(
-    "Key type: 1) Public Key Hex, 2) ADA Address (default: 1): "
+    "Key type: 1) Public Key Hex, 2) ADA Address (default: 1): ",
   );
   let publicKeyHex = "";
   let adaAddress = "";
@@ -407,13 +407,13 @@ async function createDidWithManualInput(
   } else {
     publicKeyHex =
       (await rli.question(
-        "Public Key Hex (press Enter for auto-generated): "
+        "Public Key Hex (press Enter for auto-generated): ",
       )) || "0x" + "a".repeat(128);
   }
 
   logger.info("\n--- Authentication Method ---");
   const authChoice = await rli.question(
-    "Authentication method: 1) Reference to verification method, 2) Embedded method (default: 1): "
+    "Authentication method: 1) Reference to verification method, 2) Embedded method (default: 1): ",
   );
 
   logger.info("\n--- Service ---");
@@ -433,7 +433,7 @@ async function createDidWithManualInput(
     "credential-data";
   const credentialKey =
     (await rli.question(
-      "Credential public key multibase (press Enter for default): "
+      "Credential public key multibase (press Enter for default): ",
     )) || "z6MkHaXU2BzXhf8X4n6Q1Q2QJ9CkN5j8L9M2P3R4S5T6U7V8W9X";
 
   // Create the DID document structure
@@ -480,7 +480,7 @@ async function createDidWithManualInput(
   logger.info(JSON.stringify(didDocument, null, 2));
 
   const confirmChoice = await rli.question(
-    "\nCreate DID with these values? (y/n): "
+    "\nCreate DID with these values? (y/n): ",
   );
   if (
     confirmChoice.toLowerCase() !== "y" &&
@@ -496,7 +496,7 @@ async function createDidWithManualInput(
     didDocument,
     providers,
     privateKey,
-    multipleKeys
+    multipleKeys,
   );
 
   logger.info(`\n=== DID Creation Result ===`);
@@ -507,11 +507,11 @@ async function createDidWithManualInput(
 async function handleCreateDidFromFile(
   providers: DidProviders,
   contract: DeployedDidContract,
-  rli: Interface
+  rli: Interface,
 ): Promise<void> {
   try {
     const filePath = await rli.question(
-      `Enter the path to your .did.json file (press Enter for example): `
+      `Enter the path to your .did.json file (press Enter for example): `,
     );
     let actualPath = filePath.trim();
 
@@ -579,10 +579,10 @@ async function handleCreateDidFromFile(
     logger.info(`DID ID: ${didDocument.id}`);
     logger.info(`@Contexts: ${didDocument.context?.length || 0}`);
     logger.info(
-      `Verification Methods: ${didDocument.verificationMethod?.length || 0}`
+      `Verification Methods: ${didDocument.verificationMethod?.length || 0}`,
     );
     logger.info(
-      `Authentication Methods: ${didDocument.authentication?.length || 0}`
+      `Authentication Methods: ${didDocument.authentication?.length || 0}`,
     );
     logger.info(`Services: ${didDocument.service?.length || 0}`);
     logger.info(`Credentials: ${didDocument.credentials?.length || 0}`);
@@ -596,7 +596,7 @@ async function handleCreateDidFromFile(
     // (single) Private Key for Witness (local_secret_key)
     logger.info("\n--- (single) Private Key (local_secret_key) ---");
     const privateKeyInput = await rli.question(
-      "Enter (single) private key (32 bytes as 64-character hex string, press Enter to auto-generate): "
+      "Enter (single) private key (32 bytes as 64-character hex string, press Enter to auto-generate): ",
     );
 
     let privateKey: Uint8Array;
@@ -605,7 +605,7 @@ async function handleCreateDidFromFile(
       const hexRegex = /^[0-9a-fA-F]{64}$/;
       if (!hexRegex.test(privateKeyInput.trim())) {
         logger.error(
-          "Invalid private key format. Must be exactly 32 bytes as 64-character hex string (e.g., a1b2c3d4...)."
+          "Invalid private key format. Must be exactly 32 bytes as 64-character hex string (e.g., a1b2c3d4...).",
         );
         return;
       }
@@ -614,16 +614,16 @@ async function handleCreateDidFromFile(
     } else {
       privateKey = api.randomBytes(32);
       logger.info(
-        `Auto-generated (single) private key (32 bytes): ${Buffer.from(privateKey).toString("hex")}`
+        `Auto-generated (single) private key (32 bytes): ${Buffer.from(privateKey).toString("hex")}`,
       );
     }
 
     // Multiple Local Secret Keys for Witness (multiple_local_secret_keys)
     logger.info(
-      "\n--- Multiple Local Secret Keys (multiple_local_secret_keys) ---"
+      "\n--- Multiple Local Secret Keys (multiple_local_secret_keys) ---",
     );
     const multipleKeysInput = await rli.question(
-      "Enter additional secret keys (comma-separated, 32 bytes each as 64-character hex, max 5 keys, press Enter to skip): "
+      "Enter additional secret keys (comma-separated, 32 bytes each as 64-character hex, max 5 keys, press Enter to skip): ",
     );
 
     let multipleKeys: Uint8Array[] = [];
@@ -641,7 +641,7 @@ async function handleCreateDidFromFile(
       for (const keyStr of keyStrings) {
         if (!hexRegex.test(keyStr)) {
           logger.error(
-            `Invalid key format: ${keyStr}. Must be exactly 32 bytes as 64-character hex string.`
+            `Invalid key format: ${keyStr}. Must be exactly 32 bytes as 64-character hex string.`,
           );
           return;
         }
@@ -653,14 +653,14 @@ async function handleCreateDidFromFile(
     }
 
     logger.info(
-      "Creating DID... This may take a moment to generate the proof."
+      "Creating DID... This may take a moment to generate the proof.",
     );
     const result = await api.createDidFromDocument(
       contract,
       didDocument,
       providers,
       privateKey,
-      multipleKeys
+      multipleKeys,
     );
 
     logger.info(`\n=== DID Creation Result ===`);
@@ -673,13 +673,13 @@ async function handleCreateDidFromFile(
 
 async function handleViewContractInfo(
   providers: DidProviders,
-  contract: DeployedDidContract
+  contract: DeployedDidContract,
 ): Promise<void> {
   try {
     const info = await api.displayContractInfo(providers, contract);
     logger.info(`\n=== Contract Information ===`);
     logger.info(`Contract Address: ${info?.contractAddress}`);
-    logger.info(`Controller Public Key: ${info?.publicKey}$`)
+    logger.info(`Controller Public Key: ${info?.publicKey}$`);
     logger.info(`Active DID: ${info?.active}`);
   } catch (error) {
     logger.error(`Failed to get contract info: ${error}`);
@@ -692,8 +692,7 @@ async function handleViewDidDetails(
 ): Promise<void> {
   try {
     const contractAddress = contract.deployTxData.public.contractAddress;
-    await api.viewDidDetails(contractAddress, providers)
-
+    await api.viewDidDetails(contractAddress, providers);
   } catch (error) {
     logger.error(`Failed to view DID details: ${error}`);
   }
@@ -701,7 +700,7 @@ async function handleViewDidDetails(
 
 async function handleAddVerificationKey(
   contract: DeployedDidContract,
-  rli: Interface
+  rli: Interface,
 ): Promise<void> {
   try {
     const keyId = await rli.question(`Key ID (e.g., 'key-1'): `);
@@ -710,7 +709,9 @@ async function handleAddVerificationKey(
       return;
     }
 
-    const keyType = (await rli.question(`${keyId} type ('jwk' or 'multibase'): `)) as "jwk" | "multibase";
+    const keyType = (await rli.question(
+      `${keyId} type ('jwk' or 'multibase'): `,
+    )) as "jwk" | "multibase";
     if (!keyType.trim()) {
       logger.error(`Did not provide a valid Key Type.`);
       return;
@@ -729,11 +730,23 @@ async function handleAddVerificationKey(
 
     // Collect allowed usages
     logger.info("Setting up key allowed usages...");
-    const authentication = (await rli.question("Allow Authentication? (y/n): ")).toLowerCase() === "y";
-    const assertionMethod = (await rli.question("Allow Assertion Method? (y/n): ")).toLowerCase() === "y";
-    const keyAgreement = (await rli.question("Allow Key Agreement? (y/n): ")).toLowerCase() ==="y";
-    const capabilityInvocation = (await rli.question("Allow Capability Invocation? (y/n): ")).toLowerCase() === "y";
-    const capabilityDelegation = (await rli.question("Allow Capability Delegation? (y/n): ")).toLowerCase() === "y";
+    const authentication =
+      (await rli.question("Allow Authentication? (y/n): ")).toLowerCase() ===
+      "y";
+    const assertionMethod =
+      (await rli.question("Allow Assertion Method? (y/n): ")).toLowerCase() ===
+      "y";
+    const keyAgreement =
+      (await rli.question("Allow Key Agreement? (y/n): ")).toLowerCase() ===
+      "y";
+    const capabilityInvocation =
+      (
+        await rli.question("Allow Capability Invocation? (y/n): ")
+      ).toLowerCase() === "y";
+    const capabilityDelegation =
+      (
+        await rli.question("Allow Capability Delegation? (y/n): ")
+      ).toLowerCase() === "y";
 
     const allowedUsages: AllowedUsages = {
       authentication,
@@ -744,7 +757,7 @@ async function handleAddVerificationKey(
     };
 
     const confirm = await rli.question(
-      `\nAdd key '${keyId.trim()}' with type '${keyType}'? (y/n): `
+      `\nAdd key '${keyId.trim()}' with type '${keyType}'? (y/n): `,
     );
     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
       logger.info("Operation cancelled.");
@@ -757,7 +770,7 @@ async function handleAddVerificationKey(
       keyId,
       publicKeyData,
       keyType,
-      allowedUsages
+      allowedUsages,
     );
     logger.info("Verification key added successfully!");
   } catch (error) {
@@ -843,25 +856,28 @@ async function handleRemoveVerificationKey(
 
     const keyId = (await rli.question("Enter the Key ID to remove: ")).trim();
     if (!keyId) {
-        logger.error("Key ID cannot be empty");
-        return;
+      logger.error("Key ID cannot be empty");
+      return;
     }
 
     const contractAddress = contract.deployTxData.public.contractAddress;
-    const state = await providers.publicDataProvider.queryContractState(contractAddress);
+    const state =
+      await providers.publicDataProvider.queryContractState(contractAddress);
     if (state === null) {
-      logger.error("Could not query contract pubic state")
+      logger.error("Could not query contract pubic state");
       return;
     }
 
     const keyRing = Did.ledger(state.data).keyRing;
 
     if (!keyRing.member(keyId)) {
-      logger.info(`Key not in Key Ring`)
+      logger.info(`Key not in Key Ring`);
       return;
     }
 
-    const confirm = await rli.question(`\nRemove key '${keyId.trim()}' from DID? (y/n): `);
+    const confirm = await rli.question(
+      `\nRemove key '${keyId.trim()}' from DID? (y/n): `,
+    );
     if (confirm.toLowerCase() !== "y" && confirm.toLowerCase() !== "yes") {
       logger.info("Operation cancelled.");
       return;
@@ -872,9 +888,9 @@ async function handleRemoveVerificationKey(
 
     logger.info("Verification key removed successfully!");
   } catch (error) {
-      logger.error(`Failed to remove verification key: ${error}`);
+    logger.error(`Failed to remove verification key: ${error}`);
   }
-};
+}
 
 const ALLOWED_USAGE_QUESTION = `
 Which one?
@@ -888,7 +904,7 @@ Choose option: `;
 async function handleAddKeyAllowedUsage(
   providers: DidProviders,
   contract: DeployedDidContract,
-  rli: Interface
+  rli: Interface,
 ): Promise<void> {
   try {
     logger.info("\n--- Add Key Allowed Usage ---");
@@ -899,7 +915,10 @@ async function handleAddKeyAllowedUsage(
       return;
     }
 
-    const usageChoice = parseInt(await rli.question(ALLOWED_USAGE_QUESTION), 10);
+    const usageChoice = parseInt(
+      await rli.question(ALLOWED_USAGE_QUESTION),
+      10,
+    );
 
     if (isNaN(usageChoice) || usageChoice < 1 || usageChoice > 5) {
       logger.error("Invalid choice");
@@ -911,9 +930,11 @@ async function handleAddKeyAllowedUsage(
 
     logger.info("Selected action:", actionType);
 
-    const confirm = (await rli.question(
-      `\nAdd '${actionTypeName}' usage to key '${keyId}'? (y/n): `
-    )).toLowerCase();
+    const confirm = (
+      await rli.question(
+        `\nAdd '${actionTypeName}' usage to key '${keyId}'? (y/n): `,
+      )
+    ).toLowerCase();
 
     if (confirm !== "y" && confirm !== "yes") {
       logger.info("Operation cancelled.");
@@ -932,7 +953,7 @@ async function handleAddKeyAllowedUsage(
 async function handleRemoveKeyAllowedUsage(
   providers: DidProviders,
   contract: DeployedDidContract,
-  rli: Interface
+  rli: Interface,
 ): Promise<void> {
   try {
     logger.info("\n--- Remove Key Allowed Usage ---");
@@ -957,9 +978,11 @@ async function handleRemoveKeyAllowedUsage(
 
     logger.info("Selected action:", actionTypeName);
 
-    const confirm = (await rli.question(
-      `\nRemove '${actionTypeName}' usage to key '${keyId}'? (y/n): `
-    )).toLowerCase();
+    const confirm = (
+      await rli.question(
+        `\nRemove '${actionTypeName}' usage to key '${keyId}'? (y/n): `,
+      )
+    ).toLowerCase();
 
     if (confirm !== "y" && confirm !== "yes") {
       logger.info("Operation cancelled.");
@@ -978,16 +1001,16 @@ async function handleRemoveKeyAllowedUsage(
 async function handleDeactivateDid(
   contract: DeployedDidContract,
   rli: Interface,
-  didId: string
+  didId: string,
 ): Promise<void> {
   try {
     logger.info("\n--- Deactivate DID ---");
     logger.warn(
-      "WARNING: This action will permanently deactivate the DID. This cannot be undone."
+      "WARNING: This action will permanently deactivate the DID. This cannot be undone.",
     );
 
     const confirm1 = await rli.question(
-      `\nAre you sure you want to deactivate ${didId}? (yes/no): `
+      `\nAre you sure you want to deactivate ${didId}? (yes/no): `,
     );
     if (confirm1.toLowerCase() !== "yes") {
       logger.info("Operation cancelled.");
