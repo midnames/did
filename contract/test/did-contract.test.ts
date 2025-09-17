@@ -1,7 +1,11 @@
 import { describe, test, expect, beforeEach, expectTypeOf } from "vitest";
 import { DIDSimulator } from "./DIDSimulator.js";
 import { ActionType, Service } from "../src/managed/did/contract/index.cjs";
-import { createSampleKey, createKeyWithUsages, createNewService } from "../utils/utils.js";
+import {
+  createSampleKey,
+  createKeyWithUsages,
+  createNewService
+} from "../utils/utils.js";
 import {
   parseJsonDID,
   writeDidToContract,
@@ -172,9 +176,7 @@ describe("DID Contract Tests", () => {
   describe("Key Management - addKey Circuit", () => {
     test("should successfully add a new multibase key", () => {
       const testKey = createSampleKey("test-key-1", "multibase");
-
       simulator.addKey(testKey);
-
       expect(simulator.hasKey("test-key-1")).toBe(true);
       const addedKey = simulator.getKey("test-key-1");
       expect(addedKey?.id).toBe("test-key-1");
@@ -183,9 +185,7 @@ describe("DID Contract Tests", () => {
 
     test("Should successfully add a new JWK key", () => {
       const testKey = createSampleKey("test-key-jwk", "jwk");
-
       simulator.addKey(testKey);
-
       expect(simulator.hasKey("test-key-jwk")).toBe(true);
       const addedKey = simulator.getKey("test-key-jwk");
       expect(addedKey?.id).toBe("test-key-jwk");
@@ -195,9 +195,7 @@ describe("DID Contract Tests", () => {
     test("Should reject duplicate key IDs", () => {
       const testKey1 = createSampleKey("duplicate-key", "multibase");
       const testKey2 = createSampleKey("duplicate-key", "jwk");
-
       simulator.addKey(testKey1);
-
       expect(() => {
         simulator.addKey(testKey2);
       }).toThrow("Cannot repeat Key id");
@@ -205,23 +203,20 @@ describe("DID Contract Tests", () => {
 
     test("Should reject key addition when DID is inactive", () => {
       const testKey = createSampleKey("test-key", "multibase");
-
       // Deactivate DID first
       simulator.deactivate();
-
       expect(() => {
         simulator.addKey(testKey);
       }).toThrow("DID is inactive");
     });
 
-    // test("Should reject key addition from unauthorized controller", () => {
-    //   const unauthorizedSimulator = DIDSimulator.createUnauthorizedSimulator();
-    //   const testKey = unauthorizedSimulator.createSampleKey("unauthorized-key", "multibase");
-
-    //   expect(() => {
-    //     unauthorizedSimulator.addKey(testKey);
-    //   }).toThrow("Only the Controller is allowed to update the DID");
-    // });
+    test("Should reject key addition from unauthorized controller", () => {
+      simulator.getPrivateState().localSecretKey = new Uint8Array(32);
+      const testKey = createSampleKey("unauthorized-key", "multibase");
+      expect(() => {
+        simulator.addKey(testKey);
+      }).toThrow("Only the Controller is allowed to update the DID");
+    });
 
     test("Should handle multiple keys addition", () => {
       const keys = [
@@ -229,9 +224,7 @@ describe("DID Contract Tests", () => {
         createSampleKey("key-2", "jwk"),
         createSampleKey("key-3", "multibase")
       ];
-
       keys.forEach((key) => simulator.addKey(key));
-
       expect(simulator.getKeyRing().size).toBe(3);
       keys.forEach((key) => {
         expect(simulator.hasKey(key.id)).toBe(true);
@@ -252,9 +245,7 @@ describe("DID Contract Tests", () => {
 
     test("Should successfully remove existing key", () => {
       expect(simulator.hasKey("removable-1")).toBe(true);
-
       simulator.removeKey("removable-1");
-
       expect(simulator.hasKey("removable-1")).toBe(false);
       expect(simulator.getKeyRing().size).toBe(2);
     });
@@ -267,26 +258,23 @@ describe("DID Contract Tests", () => {
 
     test("Should reject key removal when DID is inactive", () => {
       simulator.deactivate();
-
       expect(() => {
         simulator.removeKey("removable-1");
       }).toThrow("DID is inactive");
     });
 
-    // test("Should reject key removal from unauthorized controller", () => {
-    //   // Try to remove key using unauthorized simulator
-    //   const unauthorizedSimulator = DIDSimulator.createUnauthorizedSimulator();
-
-    //   expect(() => {
-    //     unauthorizedSimulator.removeKey("removable-1");
-    //   }).toThrow("Only the Controller is allowed to update the DID");
-    // });
+    test("Should reject key removal from unauthorized controller", () => {
+      // Try to remove key using unauthorized simulator
+      simulator.getPrivateState().localSecretKey = new Uint8Array(32);
+      expect(() => {
+        simulator.removeKey("removable-1");
+      }).toThrow("Only the Controller is allowed to update the DID");
+    });
 
     test("Should handle removal of all keys", () => {
       simulator.removeKey("removable-1");
       simulator.removeKey("removable-2");
       simulator.removeKey("removable-3");
-
       expect(simulator.getKeyRing().size).toBe(0);
     });
   });
@@ -299,24 +287,32 @@ describe("DID Contract Tests", () => {
 
     test("Should successfully add Authentication usage", () => {
       simulator.addAllowedUsage("example-test-key", ActionType.Authentication);
-
       const key = simulator.getKey("example-test-key");
       expect(key?.allowedUsages.authentication).toBe(true);
       expect(key?.allowedUsages.assertionMethod).toBe(false);
+      expect(key?.allowedUsages.keyAgreement).toBe(false);
+      expect(key?.allowedUsages.capabilityInvocation).toBe(false);
+      expect(key?.allowedUsages.capabilityDelegation).toBe(false);
     });
 
     test("Should successfully add AssertionMethod usage", () => {
       simulator.addAllowedUsage("example-test-key", ActionType.AssertionMethod);
-
       const key = simulator.getKey("example-test-key");
+      expect(key?.allowedUsages.authentication).toBe(false);
       expect(key?.allowedUsages.assertionMethod).toBe(true);
+      expect(key?.allowedUsages.keyAgreement).toBe(false);
+      expect(key?.allowedUsages.capabilityInvocation).toBe(false);
+      expect(key?.allowedUsages.capabilityDelegation).toBe(false);
     });
 
     test("Should successfully add KeyAgreement usage", () => {
       simulator.addAllowedUsage("example-test-key", ActionType.KeyAgreement);
-
       const key = simulator.getKey("example-test-key");
+      expect(key?.allowedUsages.authentication).toBe(false);
+      expect(key?.allowedUsages.assertionMethod).toBe(false);
       expect(key?.allowedUsages.keyAgreement).toBe(true);
+      expect(key?.allowedUsages.capabilityInvocation).toBe(false);
+      expect(key?.allowedUsages.capabilityDelegation).toBe(false);
     });
 
     test("Should successfully add CapabilityInvocation usage", () => {
@@ -324,9 +320,12 @@ describe("DID Contract Tests", () => {
         "example-test-key",
         ActionType.CapabilityInvocation
       );
-
       const key = simulator.getKey("example-test-key");
+      expect(key?.allowedUsages.authentication).toBe(false);
+      expect(key?.allowedUsages.assertionMethod).toBe(false);
+      expect(key?.allowedUsages.keyAgreement).toBe(false);
       expect(key?.allowedUsages.capabilityInvocation).toBe(true);
+      expect(key?.allowedUsages.capabilityDelegation).toBe(false);
     });
 
     test("Should successfully add CapabilityDelegation usage", () => {
@@ -334,8 +333,11 @@ describe("DID Contract Tests", () => {
         "example-test-key",
         ActionType.CapabilityDelegation
       );
-
       const key = simulator.getKey("example-test-key");
+      expect(key?.allowedUsages.authentication).toBe(false);
+      expect(key?.allowedUsages.assertionMethod).toBe(false);
+      expect(key?.allowedUsages.keyAgreement).toBe(false);
+      expect(key?.allowedUsages.capabilityInvocation).toBe(false);
       expect(key?.allowedUsages.capabilityDelegation).toBe(true);
     });
 
@@ -363,7 +365,6 @@ describe("DID Contract Tests", () => {
 
     test("Should reject usage addition when DID is inactive", () => {
       simulator.deactivate();
-
       expect(() => {
         simulator.addAllowedUsage(
           "example-test-key",
@@ -372,13 +373,15 @@ describe("DID Contract Tests", () => {
       }).toThrow("DID is inactive");
     });
 
-    // test("should reject usage addition from unauthorized controller", () => {
-    //   const unauthorizedSimulator = DIDSimulator.createUnauthorizedSimulator();
-
-    //   expect(() => {
-    //     unauthorizedSimulator.addAllowedUsage("example-test-key", ActionType.Authentication);
-    //   }).toThrow("Only the Controller is allowed to update the DID");
-    // });
+    test("should reject usage addition from unauthorized controller", () => {
+      simulator.getPrivateState().localSecretKey = new Uint8Array(32);
+      expect(() => {
+        simulator.addAllowedUsage(
+          "example-test-key",
+          ActionType.Authentication
+        );
+      }).toThrow("Only the Controller is allowed to update the DID");
+    });
   });
 
   describe("Key Usage Management - removeAllowedUsage Circuit", () => {
@@ -439,7 +442,6 @@ describe("DID Contract Tests", () => {
 
     test("Should reject usage removal when DID is inactive", () => {
       simulator.deactivate();
-
       expect(() => {
         simulator.removeAllowedUsage(
           "full-usage-key",
@@ -448,13 +450,15 @@ describe("DID Contract Tests", () => {
       }).toThrow("DID is inactive");
     });
 
-    // test("should reject usage removal from unauthorized controller", () => {
-    //   const unauthorizedSimulator = DIDSimulator.createUnauthorizedSimulator();
-
-    //   expect(() => {
-    //     unauthorizedSimulator.removeAllowedUsage("full-usage-key", ActionType.Authentication);
-    //   }).toThrow("Only the Controller is allowed to update the DID");
-    // });
+    test("should reject usage removal from unauthorized controller", () => {
+      simulator.getPrivateState().localSecretKey = new Uint8Array(32);
+      expect(() => {
+        simulator.removeAllowedUsage(
+          "full-usage-key",
+          ActionType.Authentication
+        );
+      }).toThrow("Only the Controller is allowed to update the DID");
+    });
   });
 
   describe("DID Deactivation - deactivate Circuit", () => {
@@ -469,34 +473,28 @@ describe("DID Contract Tests", () => {
 
     test("Should successfully deactivate active DID", () => {
       expect(simulator.isActive()).toBe(true);
-
       simulator.deactivate();
-
       expect(simulator.isActive()).toBe(false);
     });
 
     test("Should reject deactivation of already inactive DID", () => {
       simulator.deactivate();
       expect(simulator.isActive()).toBe(false);
-
       expect(() => {
         simulator.deactivate();
       }).toThrow("DID is already inactive");
     });
 
-    // test("should reject deactivation from unauthorized controller", () => {
-    //   const unauthorizedSimulator = DIDSimulator.createUnauthorizedSimulator();
-
-    //   expect(() => {
-    //     unauthorizedSimulator.deactivate();
-    //   }).toThrow("Only the Controller is allowed to update the DID");
-    // });
+    test("should reject deactivation from unauthorized controller", () => {
+      simulator.getPrivateState().localSecretKey = new Uint8Array(32);
+      expect(() => {
+        simulator.deactivate();
+      }).toThrow("Only the Controller is allowed to update the DID");
+    });
 
     test("should preserve key ring after deactivation", () => {
       expect(simulator.getKeyRing().size).toBe(2);
-
       simulator.deactivate();
-
       // Keys should still be present but DID should be inactive
       expect(simulator.getKeyRing().size).toBe(2);
       expect(simulator.hasKey("key-1")).toBe(true);
@@ -505,9 +503,7 @@ describe("DID Contract Tests", () => {
 
     test("should prevent all operations after deactivation", () => {
       const newKey = createSampleKey("post-deactivation-key", "multibase");
-
       simulator.deactivate();
-
       // All operations should fail on inactive DID
       expect(() => simulator.addKey(newKey)).toThrow("DID is inactive");
       expect(() => simulator.removeKey("key-1")).toThrow("DID is inactive");
@@ -521,15 +517,15 @@ describe("DID Contract Tests", () => {
   });
 
   describe("DID service - addService Circuit", () => {
-    let service : Service;
+    let service: Service;
     beforeEach(() => {
       simulator = new DIDSimulator();
-    })
+    });
 
     test("Should successfully add a new service", () => {
-      const id : string = "example-service-1";
-      const type : string = "DIDtype";
-      const endpoint : string = "https://example.com/messaging";
+      const id: string = "example-service-1";
+      const type: string = "DIDtype";
+      const endpoint: string = "https://example.com/messaging";
 
       service = createNewService(id, type, endpoint);
       simulator.addService(service);
@@ -540,34 +536,31 @@ describe("DID Contract Tests", () => {
       expect(fetchedServices.get(id)?.type).toBe(type);
       expect(fetchedServices.get(id)?.serviceEndpoint).toBe(endpoint);
     });
-    
 
-    test("Should a new service to a deactivated DID contract", () => {
-      // // Deactivate simulator before doing operations
+    test("Should not allow a new service to be added to a deactivated DID contract", () => {
+      // Deactivate simulator before doing operations
       simulator.deactivate();
 
-      const id : string = "deactivate-example";
-      const type : string = "deactivatedDID";
-      const endpoint : string = "https://example.com/messaging";
+      const id: string = "deactivate-example";
+      const type: string = "deactivatedDID";
+      const endpoint: string = "https://example.com/messaging";
 
       service = createNewService(id, type, endpoint);
       expect(() => {
         simulator.addService(service);
       }).toThrow("DID is inactive");
-
     });
 
     /**
-     * 
+     *
      * We do not have the possibility to currently handle empty values in our contract.
      * We can later discuss how to catch empty fields. Idea: Implement it in compact or handle the case directly in TypeScript
-     * 
-     * 
-    */
+     *
+     */
     test("Should handle service empty/long serviceEndpoint", () => {
-      const id : string = "";
-      const type : string = "";
-      const endpoint : string = "";
+      const id: string = "";
+      const type: string = "";
+      const endpoint: string = "";
 
       service = createNewService(id, type, endpoint);
       simulator.addService(service);
@@ -578,8 +571,7 @@ describe("DID Contract Tests", () => {
       expect(fetchedServices.get(id)?.type).toBe(type);
       expect(fetchedServices.get(id)?.serviceEndpoint).toBe(endpoint);
     });
-  }
-)
+  });
 
   describe("Complex Workflows", () => {
     test("Should handle complete key lifecycle", () => {

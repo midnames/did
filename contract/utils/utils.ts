@@ -69,18 +69,17 @@ export function generateSecretKey(): Uint8Array {
 }
 
 /*
- * 
+ *
  */
-export function createNewService(id : string, type : string, endpoint : string){
-  const service : Service = {
+export function createNewService(id: string, type: string, endpoint: string) {
+  const service: Service = {
     id: id,
     type: type,
     serviceEndpoint: endpoint
   };
-  
+
   return service;
 }
-
 
 /**
  * Helper method to create a key with specific allowed usages

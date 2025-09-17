@@ -9,7 +9,7 @@
       "id": "did:midnames:test-example-12345#keys-1",
       "type": "Ed25519VerificationKey2020",
       "controller": "did:midnames:test-example-12345",
-      "publicKeyMultibase": "z6MkHaXU2BzXhf8X4n6Q1Q2QJ9CkN5j8L9M2P3R4S5T6U7V8W9X"
+      "publicKeyMultibase": "1234567890"
     },
     {
       "id": "did:midnames:test-example-12345#keys-2",
@@ -18,7 +18,7 @@
       "publicKeyJwk": {
         "kty": "RCA",
         "crv": "Ed25519",
-        "x": "VCpo2LMLhn6iWku8MKvS0jN6b4UrkXJjzVZdwPBhDd8"
+        "x": "1234567890"
       }
     }
   ],
@@ -28,7 +28,7 @@
       "id": "did:midnames:test-example-12345#auth-key",
       "type": "Ed25519VerificationKey2020",
       "controller": "did:midnames:test-example-12345",
-      "publicKeyMultibase": "z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"
+      "publicKeyMultibase": "1234567890"
     }
   ],
   "assertionMethod": [

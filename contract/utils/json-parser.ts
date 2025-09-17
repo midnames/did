@@ -1,9 +1,18 @@
 import * as fs from "fs";
 import * as path from "path";
-import type { DidJsonDocument, VerificationMethod } from "../../did-cli/src/types.js";
-import { ActionType, AllowedUsages, CurveType, KeyType, PublicKey, VerificationMethodType } from "../src/managed/did/contract/index.cjs";
+import type {
+  DidJsonDocument,
+  VerificationMethod
+} from "../../did-cli/src/types.js";
+import {
+  ActionType,
+  AllowedUsages,
+  CurveType,
+  KeyType,
+  PublicKey,
+  VerificationMethodType
+} from "../src/managed/did/contract/index.cjs";
 import { DIDSimulator } from "../test/DIDSimulator.js";
-
 
 /**
  * Parse a DID JSON file and return the parsed document
@@ -11,7 +20,7 @@ import { DIDSimulator } from "../test/DIDSimulator.js";
 export function parseJsonDID(filePath: string): DidJsonDocument {
   try {
     const json_path = path.join(__dirname, "..", "test", filePath);
-    const fileContent = fs.readFileSync(json_path, 'utf-8');
+    const fileContent = fs.readFileSync(json_path, "utf-8");
     const didDocument: DidJsonDocument = JSON.parse(fileContent);
 
     // Basic validation
@@ -32,42 +41,67 @@ export function parseJsonDID(filePath: string): DidJsonDocument {
 /**
  * Write a parsed DID document to the contract by adding keys and setting usages
  */
-export function writeDidToContract(simulator: DIDSimulator, didDocument: DidJsonDocument): void {
+export function writeDidToContract(
+  simulator: DIDSimulator,
+  didDocument: DidJsonDocument
+): void {
   try {
     // Process verification methods first
     if (didDocument.verificationMethod) {
       for (const verificationMethod of didDocument.verificationMethod) {
         const keyId = extractKeyId(verificationMethod.id);
-        const publicKey = createPublicKeyFromVerificationMethod(verificationMethod, keyId);
+        const publicKey = createPublicKeyFromVerificationMethod(
+          verificationMethod,
+          keyId
+        );
         simulator.addKey(publicKey);
       }
     }
 
     if (didDocument.authentication) {
       for (const verificationMethod of didDocument.authentication)
-        processVerificationMethod(simulator, verificationMethod, ActionType.Authentication);
+        processVerificationMethod(
+          simulator,
+          verificationMethod,
+          ActionType.Authentication
+        );
     }
 
     if (didDocument.assertionMethod) {
       for (const verificationMethod of didDocument.assertionMethod)
-        processVerificationMethod(simulator, verificationMethod, ActionType.AssertionMethod);
+        processVerificationMethod(
+          simulator,
+          verificationMethod,
+          ActionType.AssertionMethod
+        );
     }
 
     if (didDocument.keyAgreement) {
       for (const verificationMethod of didDocument.keyAgreement)
-        processVerificationMethod(simulator, verificationMethod, ActionType.KeyAgreement);
+        processVerificationMethod(
+          simulator,
+          verificationMethod,
+          ActionType.KeyAgreement
+        );
     }
 
     if (didDocument.capabilityInvocation) {
       for (const verificationMethod of didDocument.capabilityInvocation)
-        processVerificationMethod(simulator, verificationMethod, ActionType.CapabilityInvocation);
+        processVerificationMethod(
+          simulator,
+          verificationMethod,
+          ActionType.CapabilityInvocation
+        );
     }
 
     if (didDocument.capabilityDelegation) {
       for (const verificationMethod of didDocument.capabilityDelegation)
-        processVerificationMethod(simulator, verificationMethod, ActionType.CapabilityDelegation);
+        processVerificationMethod(
+          simulator,
+          verificationMethod,
+          ActionType.CapabilityDelegation
+        );
     }
-
   } catch (error) {
     throw new Error(`Failed to write DID to contract: ${error}`);
   }
@@ -92,7 +126,7 @@ export function getDidFromContract(simulator: DIDSimulator): DidJsonDocument {
     const fullKeyId = `did:midnames:${contractAddress}#${keyId}`;
 
     // Add to verification methods
-    const verificationMethodEntry: any = {
+    const verificationMethodEntry: VerificationMethod = {
       id: fullKeyId,
       type: getVerificationMethodTypeString(publicKey.type),
       controller: `did:midnames:${contractAddress}`
@@ -107,7 +141,8 @@ export function getDidFromContract(simulator: DIDSimulator): DidJsonDocument {
       };
     } else {
       // Multibase format
-      verificationMethodEntry.publicKeyMultibase = publicKey.publicKey.right.key;
+      verificationMethodEntry.publicKeyMultibase =
+        publicKey.publicKey.right.key;
     }
 
     verificationMethod.push(verificationMethodEntry);
@@ -146,14 +181,17 @@ export function getDidFromContract(simulator: DIDSimulator): DidJsonDocument {
  * Helper method to extract key ID from full DID key reference
  */
 function extractKeyId(fullKeyId: string): string {
-  const parts = fullKeyId.split('#');
+  const parts = fullKeyId.split("#");
   return parts.length > 1 ? parts[1] : fullKeyId;
 }
 
 /**
  * Helper method to create PublicKey from verification method
  */
-function createPublicKeyFromVerificationMethod(verificationMethod: VerificationMethod, keyId: string): PublicKey {
+function createPublicKeyFromVerificationMethod(
+  verificationMethod: VerificationMethod,
+  keyId: string
+): PublicKey {
   const allowedUsages: AllowedUsages = {
     authentication: false,
     assertionMethod: false,
@@ -172,7 +210,7 @@ function createPublicKeyFromVerificationMethod(verificationMethod: VerificationM
         left: {
           kty: KeyType.EC,
           crv: CurveType.Ed25519,
-          x: BigInt("12345678901234567890") // Sample value for testing
+          x: BigInt(verificationMethod?.publicKeyJwk.x)
         },
         right: { key: "" }
       },
@@ -188,7 +226,7 @@ function createPublicKeyFromVerificationMethod(verificationMethod: VerificationM
         left: {
           kty: KeyType.EC,
           crv: CurveType.Ed25519,
-          x: 0n
+          x: 0n // Irrelevant
         },
         right: {
           key: verificationMethod.publicKeyMultibase
@@ -197,7 +235,9 @@ function createPublicKeyFromVerificationMethod(verificationMethod: VerificationM
       allowedUsages
     };
   } else {
-    throw new Error(`Unsupported key format in verification method: ${keyId}. Only publicKeyJwk and publicKeyMultibase are supported.`);
+    throw new Error(
+      `Unsupported key format in verification method: ${keyId}. Only publicKeyJwk and publicKeyMultibase are supported.`
+    );
   }
 }
 
@@ -217,14 +257,21 @@ function getCurveTypeString(curveType: CurveType): string {
 }
 
 function processVerificationMethod(
-  simulator: DIDSimulator, verificationMethod: string | VerificationMethod, actionType: ActionType
+  simulator: DIDSimulator,
+  verificationMethod: string | VerificationMethod,
+  actionType: ActionType
 ): void {
   if (typeof verificationMethod === "string") {
+    // Reference
     const keyId = extractKeyId(verificationMethod);
     simulator.addAllowedUsage(keyId, actionType);
-  } else { // VerificationMethod
+  } else {
+    // VerificationMethod
     const keyId = extractKeyId(verificationMethod.id);
-    const publicKey = createPublicKeyFromVerificationMethod(verificationMethod, keyId);
+    const publicKey = createPublicKeyFromVerificationMethod(
+      verificationMethod,
+      keyId
+    );
     simulator.addKey(publicKey);
     simulator.addAllowedUsage(keyId, actionType);
   }
