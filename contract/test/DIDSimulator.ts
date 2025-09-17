@@ -9,17 +9,11 @@ import {
   type Ledger,
   ledger,
   type PublicKey,
-  type AllowedUsages,
   type Service,
-  ActionType,
-  VerificationMethodType,
-  KeyType,
-  CurveType
+  ActionType
 } from "../src/managed/did/contract/index.cjs";
 import { type DidPrivateState, witnesses } from "../src/witnesses.js";
-import * as fs from "node:fs";
-import path, { dirname } from "node:path";
-import { createSampleKey, generateSecretKey } from "../utils/utils.js";
+import { generateSecretKey } from "../utils/utils.js";
 
 /**
  * DID Contract Simulator for testing DID operations without blockchain deployment
@@ -94,9 +88,9 @@ export class DIDSimulator {
    * Get all keys in the key ring
    */
   public getKeyRing(): Map<string, PublicKey> {
-    const keyRingMap : Map<string, PublicKey> = new Map();
+    const keyRingMap: Map<string, PublicKey> = new Map();
     const keyRing = this.getLedger().keyRing;
-    for(const k of keyRing){
+    for (const k of keyRing) {
       const [id, publicKey] = k;
       keyRingMap.set(id, publicKey);
     }
@@ -107,9 +101,9 @@ export class DIDSimulator {
    * Get all services
    */
   public getServices(): Map<string, Service> {
-    const servicesMap : Map<string, Service> = new Map();
+    const servicesMap: Map<string, Service> = new Map();
     const services = this.getLedger().services;
-    for(const k of services){
+    for (const k of services) {
       const [id, service] = k;
       servicesMap.set(id, service);
     }
