@@ -10,6 +10,7 @@ import {
   ledger,
   type PublicKey,
   type AllowedUsages,
+  type Service,
   ActionType,
   VerificationMethodType,
   KeyType,
@@ -103,6 +104,19 @@ export class DIDSimulator {
   }
 
   /**
+   * Get all services
+   */
+  public getServices(): Map<string, Service> {
+    const servicesMap : Map<string, Service> = new Map();
+    const services = this.getLedger().services;
+    for(const k of services){
+      const [id, service] = k;
+      servicesMap.set(id, service);
+    }
+    return servicesMap;
+  }
+
+  /**
    * Check if a key exists in the key ring
    */
   public hasKey(keyId: string): boolean {
@@ -183,6 +197,38 @@ export class DIDSimulator {
       this.circuitContext = result.context;
     } catch (error) {
       throw new Error(`Failed to remove allowed usage: ${error}`);
+    }
+  }
+
+  /**
+   * Add service
+   * Tests the addService circuit
+   */
+  public addService(service: Service): void {
+    try {
+      const result = this.contract.impureCircuits.addService(
+        this.circuitContext,
+        service
+      );
+      this.circuitContext = result.context;
+    } catch (error) {
+      throw new Error(`Failed to add service: ${error}`);
+    }
+  }
+
+  /**
+   * Remove service
+   * Tests the removeAllowedUsage circuit
+   */
+  public removeService(serviceId: string): void {
+    try {
+      const result = this.contract.impureCircuits.removeService(
+        this.circuitContext,
+        serviceId
+      );
+      this.circuitContext = result.context;
+    } catch (error) {
+      throw new Error(`Failed to remove service: ${error}`);
     }
   }
 
