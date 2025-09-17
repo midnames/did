@@ -7,7 +7,7 @@ export ledger active: Boolean;
 export ledger keyRing: Map<Opaque<"string">, PublicKey>;
 export ledger services: Map<Opaque<"string">, Service>;
 
-export {Maybe, Either};
+export {Maybe, Either, Service};
 
 export enum VerificationMethodType {
     Ed25519VerificationKey2020,

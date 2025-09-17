@@ -22,4 +22,6 @@ export type Keys = Did.Either<Did.PublicKeyJwk, Did.PublicKeyMultibase >;
 
 export type AllowedUsages = Did.AllowedUsages;
 
+export type Service = Did.Service;
+
 export type VerificationMethodType = Did.VerificationMethodType;

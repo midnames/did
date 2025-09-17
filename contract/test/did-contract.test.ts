@@ -1,8 +1,12 @@
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, test, expect, beforeEach, expectTypeOf } from "vitest";
 import { DIDSimulator } from "./DIDSimulator.js";
-import { ActionType } from "../src/managed/did/contract/index.cjs";
-import { createSampleKey, createKeyWithUsages } from "../utils/utils.js";
-import { parseJsonDID, writeDidToContract, getDidFromContract } from "../utils/json-parser.js";
+import { ActionType, Service } from "../src/managed/did/contract/index.cjs";
+import { createSampleKey, createKeyWithUsages, createNewService } from "../utils/utils.js";
+import {
+  parseJsonDID,
+  writeDidToContract,
+  getDidFromContract
+} from "../utils/json-parser.js";
 import { DidJsonDocument } from "../../did-cli/src/types.js";
 
 describe("DID Contract Tests", () => {
@@ -13,17 +17,17 @@ describe("DID Contract Tests", () => {
   });
 
   describe("Contract Initialization", () => {
-    test("should initialize with active DID and controller public key", () => {
+    test("Should initialize with active DID and controller public key", () => {
       expect(simulator.isActive()).toBe(true);
       expect(simulator.getControllerPublicKey()).toBeInstanceOf(Uint8Array);
       expect(simulator.getControllerPublicKey().length).toBe(32);
     });
 
-    test("should start with empty key ring", () => {
+    test("Should start with empty key ring", () => {
       expect(simulator.getKeyRing().size).toBe(0);
     });
 
-    test("should have valid contract address", () => {
+    test("Should have valid contract address", () => {
       const address = simulator.getContractAddress();
       expect(address).toBeDefined();
       expect(typeof address).toBe("string");
@@ -32,7 +36,7 @@ describe("DID Contract Tests", () => {
   });
 
   describe("DID JSON parsing & fetching", () => {
-    test("should parse a JSON DID file & store correctly", () => {
+    test("Should parse a JSON DID file & store correctly", () => {
       const location = "did-document-example.json";
 
       // Step 1: Parse the JSON DID file
@@ -64,11 +68,11 @@ describe("DID Contract Tests", () => {
 
       // Step 5: Verify key types are correct
       expect(key1?.publicKey.is_left).toBe(false); // multibase
-      expect(key2?.publicKey.is_left).toBe(true);  // JWK
+      expect(key2?.publicKey.is_left).toBe(true); // JWK
       expect(authKey?.publicKey.is_left).toBe(false); // multibase
     });
 
-    test("should retrieve the parsed JSON DID in correct format", () => {
+    test("Should retrieve the parsed JSON DID in correct format", () => {
       const location = "did-document-example.json";
 
       // Parse and write the original DID
@@ -80,14 +84,24 @@ describe("DID Contract Tests", () => {
 
       // Verify basic structure
       expect(retrievedDID).toBeDefined();
-      expect(retrievedDID["@context"]).toEqual(["https://www.w3.org/ns/did/v1"]);
+      expect(retrievedDID["@context"]).toEqual([
+        "https://www.w3.org/ns/did/v1"
+      ]);
       expect(retrievedDID.id).toMatch(/^did:midnames:/);
 
       // Verify verification methods were preserved
       expect(retrievedDID.verificationMethod).toHaveLength(3);
-      expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("keys-1"))).toBe(true);
-      expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("keys-2"))).toBe(true);
-      expect(retrievedDID.verificationMethod?.some(vm => vm.id.includes("auth-key"))).toBe(true);
+      expect(
+        retrievedDID.verificationMethod?.some((vm) => vm.id.includes("keys-1"))
+      ).toBe(true);
+      expect(
+        retrievedDID.verificationMethod?.some((vm) => vm.id.includes("keys-2"))
+      ).toBe(true);
+      expect(
+        retrievedDID.verificationMethod?.some((vm) =>
+          vm.id.includes("auth-key")
+        )
+      ).toBe(true);
 
       // Verify usage arrays are present and correct
       expect(retrievedDID.authentication).toBeDefined();
@@ -103,8 +117,12 @@ describe("DID Contract Tests", () => {
       expect(retrievedDID.capabilityInvocation?.length).toBe(1); // keys-2
 
       // Verify key formats are preserved
-      const multibaseKey = retrievedDID.verificationMethod?.find(vm => vm.publicKeyMultibase);
-      const jwkKey = retrievedDID.verificationMethod?.find(vm => vm.publicKeyJwk);
+      const multibaseKey = retrievedDID.verificationMethod?.find(
+        (vm) => vm.publicKeyMultibase
+      );
+      const jwkKey = retrievedDID.verificationMethod?.find(
+        (vm) => vm.publicKeyJwk
+      );
 
       expect(multibaseKey).toBeDefined();
       expect(jwkKey).toBeDefined();
@@ -112,13 +130,15 @@ describe("DID Contract Tests", () => {
       expect(jwkKey?.publicKeyJwk?.crv).toBe("Ed25519");
     });
 
-    test("should maintain consistency between original and retrieved DID", () => {
+    test("Should maintain consistency between original and retrieved DID", () => {
       const location = "did-document-example.json";
 
       // Parse original DID
       const originalDID = parseJsonDID(location);
-      const originalKeyCount = (originalDID.verificationMethod?.length || 0) +
-                              (originalDID.authentication?.filter(auth => typeof auth === 'object').length || 0);
+      const originalKeyCount =
+        (originalDID.verificationMethod?.length || 0) +
+        (originalDID.authentication?.filter((auth) => typeof auth === "object")
+          .length || 0);
 
       // Write to contract and retrieve
       writeDidToContract(simulator, originalDID);
@@ -130,8 +150,8 @@ describe("DID Contract Tests", () => {
       // Verify all original keys have corresponding entries in retrieved DID
       if (originalDID.verificationMethod) {
         for (const originalKey of originalDID.verificationMethod) {
-          const keyId = originalKey.id.split('#')[1];
-          const hasMatchingKey = retrievedDID.verificationMethod?.some(vm =>
+          const keyId = originalKey.id.split("#")[1];
+          const hasMatchingKey = retrievedDID.verificationMethod?.some((vm) =>
             vm.id.includes(keyId)
           );
           expect(hasMatchingKey).toBe(true);
@@ -147,7 +167,7 @@ describe("DID Contract Tests", () => {
       const retrievedAssertionCount = retrievedDID.assertionMethod?.length || 0;
       expect(retrievedAssertionCount).toBe(originalAssertionCount);
     });
-  })
+  });
 
   describe("Key Management - addKey Circuit", () => {
     test("should successfully add a new multibase key", () => {
@@ -161,7 +181,7 @@ describe("DID Contract Tests", () => {
       expect(addedKey?.publicKey.is_left).toBe(false);
     });
 
-    test("should successfully add a new JWK key", () => {
+    test("Should successfully add a new JWK key", () => {
       const testKey = createSampleKey("test-key-jwk", "jwk");
 
       simulator.addKey(testKey);
@@ -172,7 +192,7 @@ describe("DID Contract Tests", () => {
       expect(addedKey?.publicKey.is_left).toBe(true);
     });
 
-    test("should reject duplicate key IDs", () => {
+    test("Should reject duplicate key IDs", () => {
       const testKey1 = createSampleKey("duplicate-key", "multibase");
       const testKey2 = createSampleKey("duplicate-key", "jwk");
 
@@ -183,7 +203,7 @@ describe("DID Contract Tests", () => {
       }).toThrow("Cannot repeat Key id");
     });
 
-    test("should reject key addition when DID is inactive", () => {
+    test("Should reject key addition when DID is inactive", () => {
       const testKey = createSampleKey("test-key", "multibase");
 
       // Deactivate DID first
@@ -194,7 +214,7 @@ describe("DID Contract Tests", () => {
       }).toThrow("DID is inactive");
     });
 
-    // test("should reject key addition from unauthorized controller", () => {
+    // test("Should reject key addition from unauthorized controller", () => {
     //   const unauthorizedSimulator = DIDSimulator.createUnauthorizedSimulator();
     //   const testKey = unauthorizedSimulator.createSampleKey("unauthorized-key", "multibase");
 
@@ -203,17 +223,17 @@ describe("DID Contract Tests", () => {
     //   }).toThrow("Only the Controller is allowed to update the DID");
     // });
 
-    test("should handle multiple keys addition", () => {
+    test("Should handle multiple keys addition", () => {
       const keys = [
         createSampleKey("key-1", "multibase"),
         createSampleKey("key-2", "jwk"),
         createSampleKey("key-3", "multibase")
       ];
 
-      keys.forEach(key => simulator.addKey(key));
+      keys.forEach((key) => simulator.addKey(key));
 
       expect(simulator.getKeyRing().size).toBe(3);
-      keys.forEach(key => {
+      keys.forEach((key) => {
         expect(simulator.hasKey(key.id)).toBe(true);
       });
     });
@@ -227,10 +247,10 @@ describe("DID Contract Tests", () => {
         createSampleKey("removable-2", "jwk"),
         createSampleKey("removable-3", "multibase")
       ];
-      testKeys.forEach(key => simulator.addKey(key));
+      testKeys.forEach((key) => simulator.addKey(key));
     });
 
-    test("should successfully remove existing key", () => {
+    test("Should successfully remove existing key", () => {
       expect(simulator.hasKey("removable-1")).toBe(true);
 
       simulator.removeKey("removable-1");
@@ -239,13 +259,13 @@ describe("DID Contract Tests", () => {
       expect(simulator.getKeyRing().size).toBe(2);
     });
 
-    test("should reject removal of non-existent key", () => {
+    test("Should reject removal of non-existent key", () => {
       expect(() => {
         simulator.removeKey("non-existent-key");
       }).toThrow("Key is not in KeyRing");
     });
 
-    test("should reject key removal when DID is inactive", () => {
+    test("Should reject key removal when DID is inactive", () => {
       simulator.deactivate();
 
       expect(() => {
@@ -253,7 +273,7 @@ describe("DID Contract Tests", () => {
       }).toThrow("DID is inactive");
     });
 
-    // test("should reject key removal from unauthorized controller", () => {
+    // test("Should reject key removal from unauthorized controller", () => {
     //   // Try to remove key using unauthorized simulator
     //   const unauthorizedSimulator = DIDSimulator.createUnauthorizedSimulator();
 
@@ -262,7 +282,7 @@ describe("DID Contract Tests", () => {
     //   }).toThrow("Only the Controller is allowed to update the DID");
     // });
 
-    test("should handle removal of all keys", () => {
+    test("Should handle removal of all keys", () => {
       simulator.removeKey("removable-1");
       simulator.removeKey("removable-2");
       simulator.removeKey("removable-3");
@@ -277,7 +297,7 @@ describe("DID Contract Tests", () => {
       simulator.addKey(testKey);
     });
 
-    test("should successfully add Authentication usage", () => {
+    test("Should successfully add Authentication usage", () => {
       simulator.addAllowedUsage("example-test-key", ActionType.Authentication);
 
       const key = simulator.getKey("example-test-key");
@@ -285,35 +305,41 @@ describe("DID Contract Tests", () => {
       expect(key?.allowedUsages.assertionMethod).toBe(false);
     });
 
-    test("should successfully add AssertionMethod usage", () => {
+    test("Should successfully add AssertionMethod usage", () => {
       simulator.addAllowedUsage("example-test-key", ActionType.AssertionMethod);
 
       const key = simulator.getKey("example-test-key");
       expect(key?.allowedUsages.assertionMethod).toBe(true);
     });
 
-    test("should successfully add KeyAgreement usage", () => {
+    test("Should successfully add KeyAgreement usage", () => {
       simulator.addAllowedUsage("example-test-key", ActionType.KeyAgreement);
 
       const key = simulator.getKey("example-test-key");
       expect(key?.allowedUsages.keyAgreement).toBe(true);
     });
 
-    test("should successfully add CapabilityInvocation usage", () => {
-      simulator.addAllowedUsage("example-test-key", ActionType.CapabilityInvocation);
+    test("Should successfully add CapabilityInvocation usage", () => {
+      simulator.addAllowedUsage(
+        "example-test-key",
+        ActionType.CapabilityInvocation
+      );
 
       const key = simulator.getKey("example-test-key");
       expect(key?.allowedUsages.capabilityInvocation).toBe(true);
     });
 
-    test("should successfully add CapabilityDelegation usage", () => {
-      simulator.addAllowedUsage("example-test-key", ActionType.CapabilityDelegation);
+    test("Should successfully add CapabilityDelegation usage", () => {
+      simulator.addAllowedUsage(
+        "example-test-key",
+        ActionType.CapabilityDelegation
+      );
 
       const key = simulator.getKey("example-test-key");
       expect(key?.allowedUsages.capabilityDelegation).toBe(true);
     });
 
-    test("should handle multiple usage additions", () => {
+    test("Should handle multiple usage additions", () => {
       simulator.addAllowedUsage("example-test-key", ActionType.Authentication);
       simulator.addAllowedUsage("example-test-key", ActionType.AssertionMethod);
       simulator.addAllowedUsage("example-test-key", ActionType.KeyAgreement);
@@ -326,17 +352,23 @@ describe("DID Contract Tests", () => {
       expect(key?.allowedUsages.capabilityDelegation).toBe(false);
     });
 
-    test("should reject usage addition for non-existent key", () => {
+    test("Should reject usage addition for non-existent key", () => {
       expect(() => {
-        simulator.addAllowedUsage("non-existent-key", ActionType.Authentication);
+        simulator.addAllowedUsage(
+          "non-existent-key",
+          ActionType.Authentication
+        );
       }).toThrow("Key is not in KeyRing");
     });
 
-    test("should reject usage addition when DID is inactive", () => {
+    test("Should reject usage addition when DID is inactive", () => {
       simulator.deactivate();
 
       expect(() => {
-        simulator.addAllowedUsage("example-test-key", ActionType.Authentication);
+        simulator.addAllowedUsage(
+          "example-test-key",
+          ActionType.Authentication
+        );
       }).toThrow("DID is inactive");
     });
 
@@ -362,7 +394,7 @@ describe("DID Contract Tests", () => {
       simulator.addKey(keyWithAllUsages);
     });
 
-    test("should successfully remove Authentication usage", () => {
+    test("Should successfully remove Authentication usage", () => {
       simulator.removeAllowedUsage("full-usage-key", ActionType.Authentication);
 
       const key = simulator.getKey("full-usage-key");
@@ -370,17 +402,23 @@ describe("DID Contract Tests", () => {
       expect(key?.allowedUsages.assertionMethod).toBe(true); // Others should remain
     });
 
-    test("should successfully remove AssertionMethod usage", () => {
-      simulator.removeAllowedUsage("full-usage-key", ActionType.AssertionMethod);
+    test("Should successfully remove AssertionMethod usage", () => {
+      simulator.removeAllowedUsage(
+        "full-usage-key",
+        ActionType.AssertionMethod
+      );
 
       const key = simulator.getKey("full-usage-key");
       expect(key?.allowedUsages.assertionMethod).toBe(false);
     });
 
-    test("should successfully remove multiple usages", () => {
+    test("Should successfully remove multiple usages", () => {
       simulator.removeAllowedUsage("full-usage-key", ActionType.Authentication);
       simulator.removeAllowedUsage("full-usage-key", ActionType.KeyAgreement);
-      simulator.removeAllowedUsage("full-usage-key", ActionType.CapabilityDelegation);
+      simulator.removeAllowedUsage(
+        "full-usage-key",
+        ActionType.CapabilityDelegation
+      );
 
       const key = simulator.getKey("full-usage-key");
       expect(key?.allowedUsages.authentication).toBe(false);
@@ -390,17 +428,23 @@ describe("DID Contract Tests", () => {
       expect(key?.allowedUsages.capabilityDelegation).toBe(false);
     });
 
-    test("should reject usage removal for non-existent key", () => {
+    test("Should reject usage removal for non-existent key", () => {
       expect(() => {
-        simulator.removeAllowedUsage("non-existent-key", ActionType.Authentication);
+        simulator.removeAllowedUsage(
+          "non-existent-key",
+          ActionType.Authentication
+        );
       }).toThrow("Key is not in KeyRing");
     });
 
-    test("should reject usage removal when DID is inactive", () => {
+    test("Should reject usage removal when DID is inactive", () => {
       simulator.deactivate();
 
       expect(() => {
-        simulator.removeAllowedUsage("full-usage-key", ActionType.Authentication);
+        simulator.removeAllowedUsage(
+          "full-usage-key",
+          ActionType.Authentication
+        );
       }).toThrow("DID is inactive");
     });
 
@@ -420,10 +464,10 @@ describe("DID Contract Tests", () => {
         createSampleKey("key-1", "multibase"),
         createSampleKey("key-2", "jwk")
       ];
-      testKeys.forEach(key => simulator.addKey(key));
+      testKeys.forEach((key) => simulator.addKey(key));
     });
 
-    test("should successfully deactivate active DID", () => {
+    test("Should successfully deactivate active DID", () => {
       expect(simulator.isActive()).toBe(true);
 
       simulator.deactivate();
@@ -431,7 +475,7 @@ describe("DID Contract Tests", () => {
       expect(simulator.isActive()).toBe(false);
     });
 
-    test("should reject deactivation of already inactive DID", () => {
+    test("Should reject deactivation of already inactive DID", () => {
       simulator.deactivate();
       expect(simulator.isActive()).toBe(false);
 
@@ -467,13 +511,78 @@ describe("DID Contract Tests", () => {
       // All operations should fail on inactive DID
       expect(() => simulator.addKey(newKey)).toThrow("DID is inactive");
       expect(() => simulator.removeKey("key-1")).toThrow("DID is inactive");
-      expect(() => simulator.addAllowedUsage("key-1", ActionType.Authentication)).toThrow("DID is inactive");
-      expect(() => simulator.removeAllowedUsage("key-1", ActionType.Authentication)).toThrow("DID is inactive");
+      expect(() =>
+        simulator.addAllowedUsage("key-1", ActionType.Authentication)
+      ).toThrow("DID is inactive");
+      expect(() =>
+        simulator.removeAllowedUsage("key-1", ActionType.Authentication)
+      ).toThrow("DID is inactive");
     });
   });
 
+  describe("DID service - addService Circuit", () => {
+    let service : Service;
+    beforeEach(() => {
+      simulator = new DIDSimulator();
+    })
+
+    test("Should successfully add a new service", () => {
+      const id : string = "example-service-1";
+      const type : string = "DIDtype";
+      const endpoint : string = "https://example.com/messaging";
+
+      service = createNewService(id, type, endpoint);
+      simulator.addService(service);
+
+      const fetchedServices = simulator.getServices();
+
+      expect(fetchedServices.get(id)?.id).toBe(id);
+      expect(fetchedServices.get(id)?.type).toBe(type);
+      expect(fetchedServices.get(id)?.serviceEndpoint).toBe(endpoint);
+    });
+    
+
+    test("Should a new service to a deactivated DID contract", () => {
+      // // Deactivate simulator before doing operations
+      simulator.deactivate();
+
+      const id : string = "deactivate-example";
+      const type : string = "deactivatedDID";
+      const endpoint : string = "https://example.com/messaging";
+
+      service = createNewService(id, type, endpoint);
+      expect(() => {
+        simulator.addService(service);
+      }).toThrow("DID is inactive");
+
+    });
+
+    /**
+     * 
+     * We do not have the possibility to currently handle empty values in our contract.
+     * We can later discuss how to catch empty fields. Idea: Implement it in compact or handle the case directly in TypeScript
+     * 
+     * 
+    */
+    test("Should handle service empty/long serviceEndpoint", () => {
+      const id : string = "";
+      const type : string = "";
+      const endpoint : string = "";
+
+      service = createNewService(id, type, endpoint);
+      simulator.addService(service);
+
+      const fetchedServices = simulator.getServices();
+
+      expect(fetchedServices.get(id)?.id).toBe(id);
+      expect(fetchedServices.get(id)?.type).toBe(type);
+      expect(fetchedServices.get(id)?.serviceEndpoint).toBe(endpoint);
+    });
+  }
+)
+
   describe("Complex Workflows", () => {
-    test("should handle complete key lifecycle", () => {
+    test("Should handle complete key lifecycle", () => {
       // Add key
       const testKey = createSampleKey("lifecycle-key", "multibase");
       simulator.addKey(testKey);
@@ -482,7 +591,10 @@ describe("DID Contract Tests", () => {
       // Add multiple usages
       simulator.addAllowedUsage("lifecycle-key", ActionType.Authentication);
       simulator.addAllowedUsage("lifecycle-key", ActionType.AssertionMethod);
-      simulator.addAllowedUsage("lifecycle-key", ActionType.CapabilityInvocation);
+      simulator.addAllowedUsage(
+        "lifecycle-key",
+        ActionType.CapabilityInvocation
+      );
 
       let key = simulator.getKey("lifecycle-key");
       expect(key?.allowedUsages.authentication).toBe(true);
@@ -502,7 +614,7 @@ describe("DID Contract Tests", () => {
       expect(simulator.hasKey("lifecycle-key")).toBe(false);
     });
 
-    test("should handle multiple keys with different usage patterns", () => {
+    test("Should handle multiple keys with different usage patterns", () => {
       // Authentication-only key
       const authKey = createKeyWithUsages("auth-key", { authentication: true });
       simulator.addKey(authKey);
@@ -543,10 +655,10 @@ describe("DID Contract Tests", () => {
   });
 
   describe("Edge Cases and Error Conditions", () => {
-    test("should handle empty key ID", () => {
+    test("Should handle empty key ID", () => {
       const emptyIdKey = createSampleKey("", "multibase");
 
-      // This should either work or throw a meaningful error
+      // This Should either work or throw a meaningful error
       // The exact behavior depends on the contract implementation
       try {
         simulator.addKey(emptyIdKey);
@@ -556,7 +668,7 @@ describe("DID Contract Tests", () => {
       }
     });
 
-    test("should handle very long key ID", () => {
+    test("Should handle very long key ID", () => {
       const longKeyId = "a".repeat(1000);
       const longIdKey = createSampleKey(longKeyId, "multibase");
 

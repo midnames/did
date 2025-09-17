@@ -1,9 +1,19 @@
-import { AllowedUsages, CurveType, KeyType, PublicKey, VerificationMethodType } from "../src/managed/did/contract/index.cjs";
+import {
+  AllowedUsages,
+  CurveType,
+  KeyType,
+  PublicKey,
+  VerificationMethodType,
+  Service
+} from "../src/managed/did/contract/index.cjs";
 
 /**
  * Create a sample public key for testing
  */
-export function createSampleKey(keyId: string, keyType: "jwk" | "multibase" = "multibase"): PublicKey {
+export function createSampleKey(
+  keyId: string,
+  keyType: "jwk" | "multibase" = "multibase"
+): PublicKey {
   const allowedUsages: AllowedUsages = {
     authentication: false,
     assertionMethod: false,
@@ -57,6 +67,20 @@ export function generateSecretKey(): Uint8Array {
   }
   return key;
 }
+
+/*
+ * 
+ */
+export function createNewService(id : string, type : string, endpoint : string){
+  const service : Service = {
+    id: id,
+    type: type,
+    serviceEndpoint: endpoint
+  };
+  
+  return service;
+}
+
 
 /**
  * Helper method to create a key with specific allowed usages
