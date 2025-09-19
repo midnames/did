@@ -40,6 +40,7 @@ import {
   PublicKey,
   Keys,
   AllowedUsages,
+  Operation
 } from "./common-types";
 import { type Config, contractConfig } from "./config";
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
@@ -56,6 +57,7 @@ import {
 } from "@midnames/utils";
 import { toHex } from "@midnight-ntwrk/midnight-js-utils";
 import { type DidJsonDocument } from "./types";
+import { generateDefaultKey } from "../utils/utils";
 
 let logger: Logger;
 
@@ -68,7 +70,7 @@ const SECRET_KEY = new Uint8Array(32);
 
 export const joinContract = async (
   providers: DidProviders,
-  contractAddress: string,
+  contractAddress: string
 ): Promise<DeployedDidContract> => {
   const localSecretKey = SECRET_KEY;
   const initialPrivateState = createDidSecretState(localSecretKey);
@@ -83,20 +85,20 @@ export const joinContract = async (
     `Joined contract at address: ${DidContract.deployTxData.public.contractAddress}
 Witness:
 - local_secret_key: ${Buffer.from(localSecretKey).toString("hex")}
-    `,
+    `
   );
   return DidContract;
 };
 
 export const deploy = async (
   providers: DidProviders,
-  privateState: DidPrivateState,
+  privateState: DidPrivateState
 ): Promise<DeployedDidContract> => {
   // default context for contract initialization
   const defaultContext = { uri: "https://www.w3.org/ns/did/v1" };
 
   logger.debug(
-    `DEBUG: About to deploy with NetworkId: ${getZswapNetworkId()}, LedgerNetworkId: ${getLedgerNetworkId()}`,
+    `DEBUG: About to deploy with NetworkId: ${getZswapNetworkId()}, LedgerNetworkId: ${getLedgerNetworkId()}`
   );
   logger.debug(`DEBUG: PrivateStateId: ${DidPrivateStateId}`);
   logger.debug(`DEBUG: DefaultContext: ${JSON.stringify(defaultContext)}`);
@@ -109,7 +111,7 @@ export const deploy = async (
     });
     logger.debug("DEBUG: deployContract succeeded");
     logger.info(
-      `Deployed contract at address: ${DidContract.deployTxData.public.contractAddress}`,
+      `Deployed contract at address: ${DidContract.deployTxData.public.contractAddress}`
     );
     return DidContract;
   } catch (error) {
@@ -120,7 +122,7 @@ export const deploy = async (
 
 export const displayContractInfo = async (
   providers: DidProviders,
-  DidContract: DeployedDidContract,
+  DidContract: DeployedDidContract
 ): Promise<{
   contractAddress: string;
   active: boolean;
@@ -148,7 +150,7 @@ export const displayContractInfo = async (
 export const getDid = async (
   providers: DidProviders,
   contractAddress: string,
-  didId: string,
+  didId: string
 ): Promise<any | null> => {
   try {
     const state =
@@ -224,7 +226,7 @@ export interface DidDocument {
 export const getDidFormatted = async (
   providers: DidProviders,
   contractAddress: string,
-  didId: string,
+  didId: string
 ): Promise<DidDocument | null> => {
   const rawData = await getDid(providers, contractAddress, didId);
   if (!rawData) return null;
@@ -232,7 +234,7 @@ export const getDidFormatted = async (
 };
 
 export const createWalletAndMidnightProvider = async (
-  wallet: Wallet,
+  wallet: Wallet
 ): Promise<WalletProvider & MidnightProvider> => {
   const state = await Rx.firstValueFrom(wallet.state());
   return {
@@ -240,22 +242,22 @@ export const createWalletAndMidnightProvider = async (
     encryptionPublicKey: state.encryptionPublicKey,
     balanceTx(
       tx: UnbalancedTransaction,
-      newCoins: CoinInfo[],
+      newCoins: CoinInfo[]
     ): Promise<BalancedTransaction> {
       return wallet
         .balanceTransaction(
           ZswapTransaction.deserialize(
             tx.serialize(getLedgerNetworkId()),
-            getZswapNetworkId(),
+            getZswapNetworkId()
           ),
-          newCoins,
+          newCoins
         )
         .then((tx) => wallet.proveTransaction(tx))
         .then((zswapTx) =>
           Transaction.deserialize(
             zswapTx.serialize(getZswapNetworkId()),
-            getLedgerNetworkId(),
-          ),
+            getLedgerNetworkId()
+          )
         )
         .then(createBalancedTx);
     },
@@ -273,13 +275,13 @@ export const waitForSync = (wallet: Wallet) =>
         const applyGap = state.syncProgress?.lag.applyGap ?? 0n;
         const sourceGap = state.syncProgress?.lag.sourceGap ?? 0n;
         logger.info(
-          `Waiting for sync. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`,
+          `Waiting for sync. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`
         );
       }),
       Rx.filter((state) => {
         return state.syncProgress !== undefined && state.syncProgress.synced;
-      }),
-    ),
+      })
+    )
   );
 
 export const waitForSyncProgress = async (wallet: Wallet) =>
@@ -290,13 +292,13 @@ export const waitForSyncProgress = async (wallet: Wallet) =>
         const applyGap = state.syncProgress?.lag.applyGap ?? 0n;
         const sourceGap = state.syncProgress?.lag.sourceGap ?? 0n;
         logger.info(
-          `Waiting for sync progress. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`,
+          `Waiting for sync progress. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`
         );
       }),
       Rx.filter((state) => {
         return state.syncProgress !== undefined;
-      }),
-    ),
+      })
+    )
   );
 
 export const waitForFunds = (wallet: Wallet) =>
@@ -307,33 +309,33 @@ export const waitForFunds = (wallet: Wallet) =>
         const applyGap = state.syncProgress?.lag.applyGap ?? 0n;
         const sourceGap = state.syncProgress?.lag.sourceGap ?? 0n;
         logger.info(
-          `Waiting for funds. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`,
+          `Waiting for funds. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`
         );
       }),
       Rx.filter((state) => {
         return state.syncProgress?.synced === true;
       }),
       Rx.map((s) => s.balances[nativeToken()] ?? 0n),
-      Rx.filter((balance) => balance > 0n),
-    ),
+      Rx.filter((balance) => balance > 0n)
+    )
   );
 
 export const buildWalletAndWaitForFunds = async (
   { indexer, indexerWS, node, proofServer }: Config,
   seed: string,
-  filename: string,
+  filename: string
 ): Promise<Wallet & Resource> => {
   const directoryPath = process.env.SYNC_CACHE;
   let wallet: Wallet & Resource;
   if (directoryPath !== undefined) {
     if (fs.existsSync(`${directoryPath}/${filename}`)) {
       logger.info(
-        `Attempting to restore state from ${directoryPath}/${filename}`,
+        `Attempting to restore state from ${directoryPath}/${filename}`
       );
       try {
         const serialized = fs.readFileSync(
           `${directoryPath}/${filename}`,
-          "utf-8",
+          "utf-8"
         );
         wallet = await WalletBuilder.restore(
           indexer,
@@ -342,14 +344,14 @@ export const buildWalletAndWaitForFunds = async (
           node,
           seed,
           serialized,
-          "info",
+          "info"
         );
         wallet.start();
 
         const newState = await waitForSync(wallet);
         if (!newState.syncProgress?.synced) {
           logger.warn(
-            "Wallet was not able to sync from restored state, building wallet from scratch",
+            "Wallet was not able to sync from restored state, building wallet from scratch"
           );
           wallet = await WalletBuilder.buildFromSeed(
             indexer,
@@ -358,7 +360,7 @@ export const buildWalletAndWaitForFunds = async (
             node,
             seed,
             getZswapNetworkId(),
-            "info",
+            "info"
           );
           wallet.start();
         }
@@ -371,7 +373,7 @@ export const buildWalletAndWaitForFunds = async (
           logger.error(error);
         }
         logger.warn(
-          "Wallet was not able to restore using the stored state, building wallet from scratch",
+          "Wallet was not able to restore using the stored state, building wallet from scratch"
         );
         wallet = await WalletBuilder.buildFromSeed(
           indexer,
@@ -380,7 +382,7 @@ export const buildWalletAndWaitForFunds = async (
           node,
           seed,
           getZswapNetworkId(),
-          "info",
+          "info"
         );
         wallet.start();
       }
@@ -393,13 +395,13 @@ export const buildWalletAndWaitForFunds = async (
         node,
         seed,
         getZswapNetworkId(),
-        "info",
+        "info"
       );
       wallet.start();
     }
   } else {
     logger.info(
-      "File path for save file not found, building wallet from scratch",
+      "File path for save file not found, building wallet from scratch"
     );
     wallet = await WalletBuilder.buildFromSeed(
       indexer,
@@ -408,7 +410,7 @@ export const buildWalletAndWaitForFunds = async (
       node,
       seed,
       getZswapNetworkId(),
-      "info",
+      "info"
     );
     wallet.start();
   }
@@ -434,7 +436,7 @@ export const randomBytes = (length: number): Uint8Array => {
 
 export const configureProviders = async (
   wallet: Wallet & Resource,
-  config: Config,
+  config: Config
 ) => {
   const walletAndMidnightProvider =
     await createWalletAndMidnightProvider(wallet);
@@ -444,10 +446,10 @@ export const configureProviders = async (
     }),
     publicDataProvider: indexerPublicDataProvider(
       config.indexer,
-      config.indexerWS,
+      config.indexerWS
     ),
     zkConfigProvider: new NodeZkConfigProvider<DidCircuits>(
-      contractConfig.zkConfigPath,
+      contractConfig.zkConfigPath
     ),
     proofProvider: httpClientProofProvider(config.proofServer),
     walletProvider: walletAndMidnightProvider,
@@ -460,7 +462,7 @@ export function setLogger(_logger: Logger) {
 }
 
 export const buildFreshWallet = async (
-  config: Config,
+  config: Config
 ): Promise<Wallet & Resource> => {
   const seed = toHex(randomBytes(32));
   logger.info(`Building fresh wallet with generated seed...`);
@@ -513,7 +515,7 @@ export const createDidFromDocument = async (
   didDocument: DidJsonDocument,
   providers?: DidProviders,
   customPrivateKey?: Uint8Array,
-  multipleLocalSecretKeys?: Uint8Array[],
+  multipleLocalSecretKeys?: Uint8Array[]
 ): Promise<{ txId: string; didId: string }> => {
   logger.info(`Creating DID from document: ${didDocument.id}`);
 
@@ -554,7 +556,7 @@ export const createDidFromDocument = async (
           controller: toControllerVector(vm.controller || didDocument.id),
           OtherKeys: { is_some: false, value: [["key1", "key2"]] },
         };
-      },
+      }
     ) || [createDefaultVerificationMethod()];
 
     const authenticationMethods = didDocument.authentication?.map((auth) => {
@@ -615,14 +617,14 @@ export const createDidFromDocument = async (
       // Use custom private key provided by user
       if (multipleLocalSecretKeys.length > 0) {
         logger.info(
-          `Using ${multipleLocalSecretKeys.length} additional secret keys`,
+          `Using ${multipleLocalSecretKeys.length} additional secret keys`
         );
       }
 
       const customPrivateState = createDidSecretState(customPrivateKey);
       await providers.privateStateProvider.set(
         DidPrivateStateId,
-        customPrivateState,
+        customPrivateState
       );
       logger.info("Using custom private key for witness");
     } else if (providers) {
@@ -632,7 +634,7 @@ export const createDidFromDocument = async (
         logger.info("Using existing private state with deployment keys");
       } else {
         logger.error(
-          "No private state found - this should not happen after deployment",
+          "No private state found - this should not happen after deployment"
         );
       }
     }
@@ -693,7 +695,7 @@ export const addVerificationKey = async (
   keyId: string,
   publicKeyData: string,
   keyType: "jwk" | "multibase" = "multibase",
-  allowedUsages: AllowedUsages,
+  allowedUsages: AllowedUsages
 ): Promise<void> => {
   const jwk_key: Keys = {
     is_left: true,
@@ -724,10 +726,31 @@ export const addVerificationKey = async (
       allowedUsages: allowedUsages,
     };
 
-    const finalizedTxData = await DidContract.callTx.addKey(keyData);
+    // Operation for adding verification key
+    const operation: Operation = {
+      operationType: Did.OperationType.AddKey,
+
+      addKeyArgs: { is_some: true, value: { key: keyData } },
+      addAllowedUsageArgs: {
+        is_some: false,
+        value: { keyId: "", actionType: Did.ActionType.AssertionMethod },
+      },
+      removeKeyArgs: { is_some: false, value: { keyId: "" } },
+      removeAllowedUsageArgs: {
+        is_some: false,
+        value: { keyId: "", actionType: Did.ActionType.AssertionMethod },
+      },
+      addServiceArgs: {
+        is_some: false,
+        value: { service: { id: "", type: "", serviceEndpoint: "" } },
+      },
+      removeServiceArgs: { is_some: false, value: { serviceId: "" } },
+    };
+
+    const finalizedTxData = await DidContract.callTx.applyOperation(operation);
 
     logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`,
+      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
     );
   } catch (error) {
     logger.error(`Failed to add verification key: ${error}`);
@@ -737,13 +760,34 @@ export const addVerificationKey = async (
 
 export const removeVerificationKey = async (
   DidContract: DeployedDidContract,
-  keyId: string,
+  keyId: string
 ): Promise<{ txId: string }> => {
   try {
-    const finalizedTxData = await DidContract.callTx.removeKey(keyId);
+    // Operation for removing verification key
+    const operation: Operation = {
+      operationType: Did.OperationType.RemoveKey,
+
+      addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+      removeKeyArgs: { is_some: true, value: { keyId: keyId } },
+      addAllowedUsageArgs: {
+        is_some: false,
+        value: { keyId: "", actionType: Did.ActionType.AssertionMethod },
+      },
+      removeAllowedUsageArgs: {
+        is_some: false,
+        value: { keyId: "", actionType: Did.ActionType.AssertionMethod },
+      },
+      addServiceArgs: {
+        is_some: false,
+        value: { service: { id: "", type: "", serviceEndpoint: "" } },
+      },
+      removeServiceArgs: { is_some: false, value: { serviceId: "" } },
+    };
+
+    const finalizedTxData = await DidContract.callTx.applyOperation(operation);
 
     logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`,
+      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
     );
 
     return {
@@ -758,20 +802,38 @@ export const removeVerificationKey = async (
 export async function addKeyAllowedUsage(
   contract: DeployedDidContract,
   keyId: string,
-  actionType: Did.ActionType,
+  actionType: Did.ActionType
 ): Promise<{ txId: string }> {
   try {
     logger.info(
-      `Adding allowed usage ${Did.ActionType[actionType]} to key ${keyId} for DID: did:midnames:${contract.deployTxData.public.contractAddress}`,
+      `Adding allowed usage ${Did.ActionType[actionType]} to key ${keyId} for DID: did:midnames:${contract.deployTxData.public.contractAddress}`
     );
 
-    const finalizedTxData = await contract.callTx.addAllowedUsage(
-      keyId,
-      actionType,
-    );
+    // Operation to add allowed usage to key
+    const operation: Operation = {
+      operationType: Did.OperationType.AddAllowedUsage,
+
+      addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+      removeKeyArgs: { is_some: false, value: { keyId: "" } },
+      addAllowedUsageArgs: {
+        is_some: true,
+        value: { keyId: keyId, actionType: actionType },
+      },
+      removeAllowedUsageArgs: {
+        is_some: false,
+        value: { keyId: "", actionType: Did.ActionType.AssertionMethod },
+      },
+      addServiceArgs: {
+        is_some: false,
+        value: { service: { id: "", type: "", serviceEndpoint: "" } },
+      },
+      removeServiceArgs: { is_some: false, value: { serviceId: "" } },
+    };
+
+    const finalizedTxData = await contract.callTx.applyOperation(operation);
 
     logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`,
+      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
     );
 
     return {
@@ -786,20 +848,38 @@ export async function addKeyAllowedUsage(
 export async function removeKeyAllowedUsage(
   contract: DeployedDidContract,
   keyId: string,
-  actionType: Did.ActionType,
+  actionType: Did.ActionType
 ): Promise<{ txId: string }> {
   try {
     logger.info(
-      `Removing allowed usage ${Did.ActionType[actionType]} to key ${keyId} for DID: did:midnames:${contract.deployTxData.public.contractAddress}`,
+      `Removing allowed usage ${Did.ActionType[actionType]} to key ${keyId} for DID: did:midnames:${contract.deployTxData.public.contractAddress}`
     );
 
-    const finalizedTxData = await contract.callTx.removeAllowedUsage(
-      keyId,
-      actionType,
-    );
+    // Operation to add allowed usage to key
+    const operation: Operation = {
+      operationType: Did.OperationType.RemoveAllowedUsage,
+
+      addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+      removeKeyArgs: { is_some: false, value: { keyId: "" } },
+      addAllowedUsageArgs: {
+        is_some: false,
+        value: { keyId: keyId, actionType: Did.ActionType.AssertionMethod },
+      },
+      removeAllowedUsageArgs: {
+        is_some: true,
+        value: { keyId: keyId, actionType: actionType },
+      },
+      addServiceArgs: {
+        is_some: false,
+        value: { service: { id: "", type: "", serviceEndpoint: "" } },
+      },
+      removeServiceArgs: { is_some: false, value: { serviceId: "" } },
+    };
+
+    const finalizedTxData = await contract.callTx.applyOperation(operation);
 
     logger.info(
-      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`,
+      `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
     );
 
     return {
@@ -810,57 +890,6 @@ export async function removeKeyAllowedUsage(
     throw new Error(`Adding key allowed usage failed: ${error}`);
   }
 }
-
-// export const removeKeyAllowedUsage = async (
-//   midnamesContract: DeployedDidContract,
-//   didId: string,
-//   keyId: string,
-//   actionType: string
-// ): Promise<{ txId: string }> => {
-//   try {
-//     logger.info(
-//       `Removing allowed usage ${actionType} from key ${keyId} for DID: ${didId}`
-
-//     const keyIdBytes = stringToUint8Array(keyId, 64);
-
-//     let actionTypeEnum: number;
-//     switch (actionType) {
-//       case "Authentication":
-//         actionTypeEnum = 0;
-//         break;
-//       case "AssertionMethod":
-//         actionTypeEnum = 1;
-//         break;
-//       case "KeyAgreement":
-//         actionTypeEnum = 2;
-//         break;
-//       case "CapabilityInvocation":
-//         actionTypeEnum = 3;
-//         break;
-//       case "CapabilityDelegation":
-//         actionTypeEnum = 4;
-//         break;
-//       default:
-//         throw new Error(`Invalid action type: ${actionType}`);
-//     }
-
-//     const finalizedTxData = await midnamesContract.callTx.removeAllowedUsage(
-//       keyIdBytes,
-//       actionTypeEnum
-//     );
-
-//     logger.info(
-//       `Transaction ${finalizedTxData.public.txId} added in block ${finalizedTxData.public.blockHeight}`
-//     );
-
-//     return {
-//       txId: finalizedTxData.public.txId,
-//     };
-//   } catch (error) {
-//     logger.error(`Failed to remove key allowed usage: ${error}`);
-//     throw new Error(`Removing key allowed usage failed: ${error}`);
-//   }
-// };
 
 function parseDid(contractAddress: string, v: PublicKey) {
   const DID = {
@@ -885,7 +914,7 @@ function parseDid(contractAddress: string, v: PublicKey) {
 
 export async function viewDidDetails(
   contractAddress: string,
-  providers: DidProviders,
+  providers: DidProviders
 ) {
   try {
     const contractState =
@@ -937,12 +966,34 @@ export async function viewDidDetails(
 
 export const deactivateDid = async (
   didContract: DeployedDidContract,
-  didId: string,
+  didId: string
 ): Promise<{ txId: string }> => {
   try {
     logger.info(`Deactivating DID: ${didId}`);
 
-    const finalizedTxData = await didContract.callTx.deactivate();
+    // Operation to add allowed usage to key
+    const operation: Operation = {
+      operationType: Did.OperationType.Deactivate,
+
+      addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+      removeKeyArgs: { is_some: false, value: { keyId: "" } },
+      addAllowedUsageArgs: {
+        is_some: false,
+        value: { keyId: "", actionType: Did.ActionType.AssertionMethod },
+      },
+      removeAllowedUsageArgs: {
+        is_some: false,
+        value: { keyId: "", actionType: Did.ActionType.AssertionMethod },
+      },
+      addServiceArgs: {
+        is_some: false,
+        value: { service: { id: "", type: "", serviceEndpoint: "" } },
+      },
+      removeServiceArgs: { is_some: false, value: { serviceId: "" } },
+    };
+
+
+    const finalizedTxData = await didContract.callTx.applyOperation(operation);
 
     return {
       txId: finalizedTxData.public.txId,

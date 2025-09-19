@@ -77,7 +77,6 @@ export function createNewService(id: string, type: string, endpoint: string) {
     type: type,
     serviceEndpoint: endpoint
   };
-
   return service;
 }
 

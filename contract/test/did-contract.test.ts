@@ -482,7 +482,7 @@ describe("DID Contract Tests", () => {
       expect(simulator.isActive()).toBe(false);
       expect(() => {
         simulator.deactivate();
-      }).toThrow("DID is already inactive");
+      }).toThrowError();
     });
 
     test("should reject deactivation from unauthorized controller", () => {

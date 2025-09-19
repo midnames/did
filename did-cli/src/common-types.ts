@@ -36,3 +36,7 @@ export type AllowedUsages = Did.AllowedUsages;
 export type Service = Did.Service;
 
 export type VerificationMethodType = Did.VerificationMethodType;
+
+export type Operation = Did.Operation;
+
+export type OperationType = Did.OperationType;

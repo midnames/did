@@ -14,7 +14,9 @@ import {
 } from "../src/managed/did/contract/index.cjs";
 import { type DidPrivateState, witnesses } from "../src/witnesses.js";
 import { generateSecretKey } from "../utils/utils.js";
-
+import { Operation, OperationType } from "../../did-cli/src/common-types.js";
+import { Did } from "@midnight-ntwrk/midnight-did-contract";
+import { generateDefaultKey } from "../../did-cli/utils/utils.js";
 /**
  * DID Contract Simulator for testing DID operations without blockchain deployment
  * Provides methods to test all DID contract circuits in isolation
@@ -134,10 +136,31 @@ export class DIDSimulator {
    */
   public addKey(key: PublicKey): void {
     try {
-      const result = this.contract.impureCircuits.addKey(
+      const operation: Operation = {
+        operationType: Did.OperationType.AddKey,
+
+        addKeyArgs: { is_some: true, value: { key: key } },
+        addAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        removeKeyArgs: { is_some: false, value: { keyId: "" } },
+        removeAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addServiceArgs: {
+          is_some: false,
+          value: { service: { id: "", type: "", serviceEndpoint: "" } }
+        },
+        removeServiceArgs: { is_some: false, value: { serviceId: "" } }
+      };
+
+      const result = this.contract.impureCircuits.applyOperation(
         this.circuitContext,
-        key
+        operation
       );
+
       this.circuitContext = result.context;
     } catch (error) {
       throw new Error(`Failed to add key: ${error}`);
@@ -150,9 +173,29 @@ export class DIDSimulator {
    */
   public removeKey(keyId: string): void {
     try {
-      const result = this.contract.impureCircuits.removeKey(
+      const operation: Operation = {
+        operationType: Did.OperationType.RemoveKey,
+
+        addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+        removeKeyArgs: { is_some: true, value: { keyId: keyId } },
+        addAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        removeAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addServiceArgs: {
+          is_some: false,
+          value: { service: { id: "", type: "", serviceEndpoint: "" } }
+        },
+        removeServiceArgs: { is_some: false, value: { serviceId: "" } }
+      };
+
+      const result = this.contract.impureCircuits.applyOperation(
         this.circuitContext,
-        keyId
+        operation
       );
       this.circuitContext = result.context;
     } catch (error) {
@@ -166,10 +209,35 @@ export class DIDSimulator {
    */
   public addAllowedUsage(keyId: string, actionType: ActionType): void {
     try {
-      const result = this.contract.impureCircuits.addAllowedUsage(
+      const operation: Operation = {
+        operationType: Did.OperationType.AddAllowedUsage,
+
+        addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+        removeKeyArgs: { is_some: false, value: { keyId: "keyId" } },
+        addAllowedUsageArgs: {
+          is_some: true,
+          value: { keyId: keyId, actionType: actionType }
+        },
+        removeAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addServiceArgs: {
+          is_some: false,
+          value: {
+            service: {
+              id: "",
+              type: "",
+              serviceEndpoint: ""
+            }
+          }
+        },
+        removeServiceArgs: { is_some: false, value: { serviceId: "" } }
+      };
+
+      const result = this.contract.impureCircuits.applyOperation(
         this.circuitContext,
-        keyId,
-        actionType
+        operation
       );
       this.circuitContext = result.context;
     } catch (error) {
@@ -183,26 +251,71 @@ export class DIDSimulator {
    */
   public removeAllowedUsage(keyId: string, actionType: ActionType): void {
     try {
-      const result = this.contract.impureCircuits.removeAllowedUsage(
+      const operation: Operation = {
+        operationType: Did.OperationType.AddAllowedUsage,
+
+        addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+        removeKeyArgs: { is_some: false, value: { keyId: "keyId" } },
+        addAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        removeAllowedUsageArgs: {
+          is_some: true,
+          value: { keyId: keyId, actionType: actionType }
+        },
+        addServiceArgs: {
+          is_some: false,
+          value: { service: { id: "", type: "", serviceEndpoint: "" } }
+        },
+        removeServiceArgs: { is_some: false, value: { serviceId: "" } }
+      };
+
+      const result = this.contract.impureCircuits.applyOperation(
         this.circuitContext,
-        keyId,
-        actionType
+        operation
       );
       this.circuitContext = result.context;
     } catch (error) {
       throw new Error(`Failed to remove allowed usage: ${error}`);
     }
-  }
 
-  /**
-   * Add service
-   * Tests the addService circuit
-   */
+    /**
+     * Add service
+     * Tests the addService circuit
+     */
+  }
   public addService(service: Service): void {
     try {
-      const result = this.contract.impureCircuits.addService(
+      const operation: Operation = {
+        operationType: Did.OperationType.AddService,
+
+        addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+        removeKeyArgs: { is_some: false, value: { keyId: "keyId" } },
+        removeAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addServiceArgs: {
+          is_some: true,
+          value: {
+            service: {
+              id: service.id,
+              type: service.type,
+              serviceEndpoint: service.serviceEndpoint
+            }
+          }
+        },
+        removeServiceArgs: { is_some: false, value: { serviceId: "" } }
+      };
+
+      const result = this.contract.impureCircuits.applyOperation(
         this.circuitContext,
-        service
+        operation
       );
       this.circuitContext = result.context;
     } catch (error) {
@@ -216,9 +329,35 @@ export class DIDSimulator {
    */
   public removeService(serviceId: string): void {
     try {
-      const result = this.contract.impureCircuits.removeService(
+      const operation: Operation = {
+        operationType: Did.OperationType.RemoveService,
+
+        addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+        removeKeyArgs: { is_some: false, value: { keyId: "keyId" } },
+        removeAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addServiceArgs: {
+          is_some: false,
+          value: {
+            service: {
+              id: "",
+              type: "",
+              serviceEndpoint: ""
+            }
+          }
+        },
+        removeServiceArgs: { is_some: true, value: { serviceId: serviceId } }
+      };
+
+      const result = this.contract.impureCircuits.applyOperation(
         this.circuitContext,
-        serviceId
+        operation
       );
       this.circuitContext = result.context;
     } catch (error) {
@@ -232,8 +371,29 @@ export class DIDSimulator {
    */
   public deactivate(): void {
     try {
-      const result = this.contract.impureCircuits.deactivate(
-        this.circuitContext
+      const operation: Operation = {
+        operationType: Did.OperationType.Deactivate,
+
+        addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
+        removeKeyArgs: { is_some: false, value: { keyId: "keyId" } },
+        removeAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addAllowedUsageArgs: {
+          is_some: false,
+          value: { keyId: "", actionType: ActionType.AssertionMethod }
+        },
+        addServiceArgs: {
+          is_some: false,
+          value: { service: { id: "", type: "", serviceEndpoint: "" } }
+        },
+        removeServiceArgs: { is_some: false, value: { serviceId: "" } }
+      };
+
+      const result = this.contract.impureCircuits.applyOperation(
+        this.circuitContext,
+        operation
       );
       this.circuitContext = result.context;
     } catch (error) {
