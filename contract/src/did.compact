@@ -69,35 +69,100 @@ constructor() {
     active = true;
 }
 
+// Public
+
+export enum OperationType{
+    Deactivate,
+    AddKey,
+    RemoveKey,
+    AddAllowedUsage,
+    RemoveAllowedUsage,
+    AddService,
+    RemoveService,
+}
+
+export struct AddKeyArgs{
+    key: PublicKey,
+}
+
+export struct RemoveKeyArgs {
+    keyId: Opaque<"string">,
+}
+
+export struct AddAllowedUsageArgs {
+    keyId: Opaque<"string">,
+    actionType: ActionType,
+}
+
+export struct RemoveAllowedUsageArgs {
+    keyId: Opaque<"string">,
+    actionType: ActionType,
+}
+
+export struct AddServiceArgs {
+    service: Service,
+}
+
+export struct RemoveServiceArgs {
+    serviceId: Opaque<"string">,
+}
+
+export struct Operation {
+    operationType: OperationType,
+    addKeyArgs: Maybe<AddKeyArgs>,
+    removeKeyArgs: Maybe<RemoveKeyArgs>,
+    addAllowedUsageArgs: Maybe<AddAllowedUsageArgs>,
+    removeAllowedUsageArgs: Maybe<RemoveAllowedUsageArgs>,
+    addServiceArgs: Maybe<AddServiceArgs>,
+    removeServiceArgs: Maybe<RemoveServiceArgs>,
+}
+
+export circuit applyOperation(operation: Operation): [] {
+    assert(active, "DID is inactive");
+    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+
+    const d_operation = disclose(operation);
+
+    if (d_operation.operationType == OperationType.Deactivate) {
+        deactivate();
+    } else if (d_operation.operationType == OperationType.AddKey) {
+        addKey(d_operation.addKeyArgs.value.key);
+    } else if (d_operation.operationType == OperationType.RemoveKey) {
+        removeKey(d_operation.removeKeyArgs.value.keyId);
+    } else if (d_operation.operationType == OperationType.AddAllowedUsage) {
+        addAllowedUsage(d_operation.addAllowedUsageArgs.value.keyId, d_operation.addAllowedUsageArgs.value.actionType);
+    } else if (d_operation.operationType == OperationType.RemoveAllowedUsage) {
+        removeAllowedUsage(d_operation.removeAllowedUsageArgs.value.keyId, d_operation.removeAllowedUsageArgs.value.actionType);
+    } else if (d_operation.operationType == OperationType.AddService) {
+        addService(d_operation.addServiceArgs.value.service);
+    } else if (d_operation.operationType == OperationType.RemoveService) {
+        removeService(d_operation.removeServiceArgs.value.serviceId);
+    }
+}
+
+// Private
+
 pure circuit publicKey(sk: Bytes<32>): Bytes<32> {
     return persistentHash<Vector<2, Bytes<32>>>([pad(32, "midnames:did:pk"), sk]);
 }
 
-export circuit deactivate(): [] {
-    assert(active, "DID is already inactive");
-    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+circuit deactivate(): [] {
     active = false;
 }
 
-export circuit addKey(key: PublicKey): [] {
-    assert(active, "DID is inactive");
-    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+circuit addKey(key: PublicKey): [] {
     const d_key = disclose(key);
     assert(!keyRing.member(d_key.id), "Cannot repeat Key id");
     keyRing.insert(d_key.id, d_key);
 }
 
-export circuit removeKey(keyId: Opaque<"string">): [] {
-    assert(active, "DID is inactive");
-    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+circuit removeKey(keyId: Opaque<"string">): [] {
     const d_keyId = disclose(keyId);
     assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
     keyRing.remove(d_keyId);
 }
 
-export circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
-    assert(active, "DID is inactive");
-    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
     assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
 
     const d_key = keyRing.lookup(disclose(keyId));
@@ -126,9 +191,7 @@ export circuit addAllowedUsage(keyId: Opaque<"string">, actionType: ActionType):
     }
 }
 
-export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
-    assert(active, "DID is inactive");
-    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionType): [] {
     assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
 
     const d_key = keyRing.lookup(disclose(keyId));
@@ -157,18 +220,14 @@ export circuit removeAllowedUsage(keyId: Opaque<"string">, actionType: ActionTyp
     }
 }
 
-export circuit addService(service: Service): [] {
-    assert(active, "DID is inactive");
-    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+circuit addService(service: Service): [] {
     const d_service = disclose(service);
     assert(!services.member(d_service.id), "Cannot repeat Service id");
     services.insert(d_service.id, d_service);
 }
 
-export circuit removeService(serviceId: Opaque<"string">): [] {
-    assert(active, "DID is inactive");
-    assert(controllerPublicKey == publicKey(localSecretKey()), "Only the Controller is allowed to update the DID");
+circuit removeService(serviceId: Opaque<"string">): [] {
     const d_serviceId = disclose(serviceId);
-    assert(keyRing.member(disclose(serviceId)), "Services is not in Services Set");
+    assert(keyRing.member(disclose(serviceId)), "Service is not in Services Set");
     services.remove(d_serviceId);
 }
