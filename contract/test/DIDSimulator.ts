@@ -51,44 +51,26 @@ export class DIDSimulator {
     };
   }
 
-  /**
-   * Get current ledger state
-   */
   public getLedger(): Ledger {
     return ledger(this.circuitContext.transactionContext.state);
   }
 
-  /**
-   * Get current private state
-   */
   public getPrivateState(): DidPrivateState {
     return this.circuitContext.currentPrivateState;
   }
 
-  /**
-   * Get contract address for testing
-   */
   public getContractAddress(): string {
     return this.circuitContext.transactionContext.address;
   }
 
-  /**
-   * Check if DID is active
-   */
   public isActive(): boolean {
     return this.getLedger().active;
   }
 
-  /**
-   * Get controller public key
-   */
   public getControllerPublicKey(): Uint8Array {
     return this.getLedger().controllerPublicKey;
   }
 
-  /**
-   * Get all keys in the key ring
-   */
   public getKeyRing(): Map<string, PublicKey> {
     const keyRingMap: Map<string, PublicKey> = new Map();
     const keyRing = this.getLedger().keyRing;
@@ -99,9 +81,6 @@ export class DIDSimulator {
     return keyRingMap;
   }
 
-  /**
-   * Get all services
-   */
   public getServices(): Map<string, Service> {
     const servicesMap: Map<string, Service> = new Map();
     const services = this.getLedger().services;
@@ -112,16 +91,10 @@ export class DIDSimulator {
     return servicesMap;
   }
 
-  /**
-   * Check if a key exists in the key ring
-   */
   public hasKey(keyId: string): boolean {
     return this.getLedger().keyRing.member(keyId);
   }
 
-  /**
-   * Get a specific key from the key ring
-   */
   public getKey(keyId: string): PublicKey | undefined {
     try {
       return this.getLedger().keyRing.lookup(keyId);
@@ -130,10 +103,6 @@ export class DIDSimulator {
     }
   }
 
-  /**
-   * Add a key to the DID
-   * Tests the addKey circuit
-   */
   public addKey(key: PublicKey): void {
     try {
       const operation: Operation = {
@@ -167,10 +136,6 @@ export class DIDSimulator {
     }
   }
 
-  /**
-   * Remove a key from the DID
-   * Tests the removeKey circuit
-   */
   public removeKey(keyId: string): void {
     try {
       const operation: Operation = {
@@ -203,10 +168,6 @@ export class DIDSimulator {
     }
   }
 
-  /**
-   * Add allowed usage to a key
-   * Tests the addAllowedUsage circuit
-   */
   public addAllowedUsage(keyId: string, actionType: ActionType): void {
     try {
       const operation: Operation = {
@@ -245,14 +206,10 @@ export class DIDSimulator {
     }
   }
 
-  /**
-   * Remove allowed usage from a key
-   * Tests the removeAllowedUsage circuit
-   */
   public removeAllowedUsage(keyId: string, actionType: ActionType): void {
     try {
       const operation: Operation = {
-        operationType: Did.OperationType.AddAllowedUsage,
+        operationType: Did.OperationType.RemoveAllowedUsage,
 
         addKeyArgs: { is_some: false, value: { key: generateDefaultKey() } },
         removeKeyArgs: { is_some: false, value: { keyId: "keyId" } },
@@ -279,12 +236,8 @@ export class DIDSimulator {
     } catch (error) {
       throw new Error(`Failed to remove allowed usage: ${error}`);
     }
-
-    /**
-     * Add service
-     * Tests the addService circuit
-     */
   }
+
   public addService(service: Service): void {
     try {
       const operation: Operation = {
@@ -323,10 +276,6 @@ export class DIDSimulator {
     }
   }
 
-  /**
-   * Remove service
-   * Tests the removeAllowedUsage circuit
-   */
   public removeService(serviceId: string): void {
     try {
       const operation: Operation = {
@@ -365,10 +314,6 @@ export class DIDSimulator {
     }
   }
 
-  /**
-   * Deactivate the DID
-   * Tests the deactivate circuit
-   */
   public deactivate(): void {
     try {
       const operation: Operation = {
@@ -401,9 +346,6 @@ export class DIDSimulator {
     }
   }
 
-  /**
-   * Reset the simulator state to initial conditions
-   */
   public reset(customSecretKey?: Uint8Array): void {
     const localSecretKey = customSecretKey || generateSecretKey();
 

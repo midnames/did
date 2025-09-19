@@ -158,7 +158,7 @@ circuit addKey(key: PublicKey): [] {
 
 circuit removeKey(keyId: Opaque<"string">): [] {
     const d_keyId = disclose(keyId);
-    assert(keyRing.member(disclose(keyId)), "Key is not in KeyRing");
+    assert(keyRing.member(d_keyId), "Key is not in KeyRing");
     keyRing.remove(d_keyId);
 }
 
@@ -228,6 +228,6 @@ circuit addService(service: Service): [] {
 
 circuit removeService(serviceId: Opaque<"string">): [] {
     const d_serviceId = disclose(serviceId);
-    assert(keyRing.member(disclose(serviceId)), "Service is not in Services Set");
+    assert(keyRing.member(d_serviceId), "Service is not in Services Set");
     services.remove(d_serviceId);
 }
