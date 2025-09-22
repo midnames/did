@@ -49,16 +49,6 @@ Choose a DID operation:
   7. Back to main menu
 Select an option: `;
 
-// const MAIN_LOOP_QUESTION = `
-// DID Operations Menu:
-//   1. Populate a new DID (interactive)
-//   2. Populate DID from JSON file
-//   3. View contract info
-//   4. Lookup DID by ID
-//   5. Perform operations on specified DID
-//   6. Exit
-// Choose an option: `;
-
 async function buildWallet(
   config: Config,
   rli: Interface,
@@ -123,11 +113,9 @@ async function createDidContract(
 
 async function updateDidContract(
   providers: DidProviders,
-  rli: Interface,
+  contractAddress: string,
+  rli: Interface
 ): Promise<DeployedDidContract> {
-  const contractAddress = await rli.question(
-    "What is the contract address (in hex)? ",
-  );
   const contract = await api.joinContract(providers, contractAddress);
 
   while (true) {
@@ -193,15 +181,18 @@ async function mainLoop(
     const choice = await rli.question(CREATE_UPDATE_OR_VIEW);
     switch (choice) {
       case "1":
-        return await createDidContract(providers);
-      // await handleCreateDidInteractive(providers, new_did_contract_address, rli);
+        const contract: DeployedDidContract = await createDidContract(providers);
+        return await updateDidContract(providers, contract.deployTxData.public.contractAddress, rli);
       case "2":
-        return await updateDidContract(providers, rli);
+        const contractAddress = await rli.question(
+          "What is the contract address (in hex)? ",
+      );
+      return await updateDidContract(providers, contractAddress, rli);
       case "3":
         return await viewDidContract(providers, rli);
       case "4":
         logger.info("Exiting...");
-        return null;
+      return null;
       default:
         logger.error(`Invalid choice: ${choice}`);
     }
