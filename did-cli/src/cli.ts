@@ -114,7 +114,7 @@ async function createDidContract(
 async function updateDidContract(
   providers: DidProviders,
   contractAddress: string,
-  rli: Interface
+  rli: Interface,
 ): Promise<DeployedDidContract> {
   const contract = await api.joinContract(providers, contractAddress);
 
@@ -181,18 +181,23 @@ async function mainLoop(
     const choice = await rli.question(CREATE_UPDATE_OR_VIEW);
     switch (choice) {
       case "1":
-        const contract: DeployedDidContract = await createDidContract(providers);
-        return await updateDidContract(providers, contract.deployTxData.public.contractAddress, rli);
+        const contract: DeployedDidContract =
+          await createDidContract(providers);
+        return await updateDidContract(
+          providers,
+          contract.deployTxData.public.contractAddress,
+          rli,
+        );
       case "2":
         const contractAddress = await rli.question(
           "What is the contract address (in hex)? ",
-      );
-      return await updateDidContract(providers, contractAddress, rli);
+        );
+        return await updateDidContract(providers, contractAddress, rli);
       case "3":
         return await viewDidContract(providers, rli);
       case "4":
         logger.info("Exiting...");
-      return null;
+        return null;
       default:
         logger.error(`Invalid choice: ${choice}`);
     }
@@ -708,15 +713,50 @@ async function handleAddVerificationKey(
       return;
     }
 
-    if (!(keyType == "jwk" || keyType == "multibase")) {
-      logger.error("Invalid Key Type (must provide JWK or Multibase)");
-      return;
-    }
+    let kty: Did.KeyType;
+    let crv: Did.CurveType;
+    let x: string;
+    let y: string;
+    switch (keyType) {
+      case "jwk": {
+        const kty_ans = await rli.question(`key type [EC]: `);
+        if (!kty_ans.trim() || kty_ans.trim() == "EC") {
+          kty = Did.KeyType.EC;
+        } else {
+          logger.error("Key Type not supported");
+          return;
+        }
 
-    const publicKeyData = await rli.question(`Public key data: `);
-    if (!publicKeyData.trim()) {
-      logger.error("Public key data cannot be empty");
-      return;
+        const crv_ans = await rli.question(`key type [secp256k1]: `);
+        if (!crv_ans.trim() || crv_ans.trim() == "secp256k1") {
+          crv = Did.CurveType.Secp256k1;
+        } else {
+          logger.error("Key Type not supported");
+          return;
+        }
+
+        x = await rli.question(`x: `);
+        if (!x.trim()) {
+          logger.error("Cannot be empty");
+          return;
+        }
+
+        y = await rli.question(`y: `);
+        if (!y.trim()) {
+          logger.error("Cannot be empty");
+          return;
+        }
+
+        break;
+      }
+      case "multibase": {
+        logger.error("Key Type Multibase not yet implemented");
+        return;
+      }
+      default: {
+        logger.error("Invalid Key Type (must provide JWK or Multibase)");
+        return;
+      }
     }
 
     // Collect allowed usages
@@ -759,7 +799,10 @@ async function handleAddVerificationKey(
     await api.addVerificationKey(
       contract,
       keyId,
-      publicKeyData,
+      kty,
+      crv,
+      x,
+      y,
       keyType,
       allowedUsages,
     );

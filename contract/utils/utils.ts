@@ -46,7 +46,7 @@ export function createSampleKey(
         left: {
           kty: KeyType.EC,
           crv: CurveType.Ed25519,
-          x: 0n
+          x: ""
         },
         right: {
           key: "z6MkHaXU2BzXhf8X4n6Q1Q2QJ9CkN5j8L9M2P3R4S5T6U7V8W9X"
